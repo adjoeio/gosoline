@@ -83,6 +83,27 @@ func (_m *Repository) GetModelId() mdl.ModelId {
 	return r0
 }
 
+// OptimisticLockSave provides a mock function with given fields: ctx, value
+func (_m *Repository) OptimisticLockSave(ctx context.Context, value ddb.VersionedModel) (bool, error) {
+	ret := _m.Called(ctx, value)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(context.Context, ddb.VersionedModel) bool); ok {
+		r0 = rf(ctx, value)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, ddb.VersionedModel) error); ok {
+		r1 = rf(ctx, value)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Query provides a mock function with given fields: ctx, qb, result
 func (_m *Repository) Query(ctx context.Context, qb ddb.QueryBuilder, result interface{}) error {
 	ret := _m.Called(ctx, qb, result)

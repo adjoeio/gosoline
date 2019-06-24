@@ -11,6 +11,7 @@ import (
 	"github.com/applike/gosoline/pkg/mon"
 	"github.com/applike/gosoline/pkg/tracing"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/guregu/dynamo"
@@ -35,6 +36,7 @@ type Repository interface {
 	Query(ctx context.Context, qb QueryBuilder, result interface{}) error
 	Save(ctx context.Context, item interface{}) error
 	Update(ctx context.Context, exp djoemo.UpdateExpression, qb QueryBuilder, values map[string]interface{}) error
+	OptimisticLockSave(ctx context.Context, value VersionedModel) (bool, error)
 	QueryBuilder() QueryBuilder
 }
 
@@ -215,6 +217,28 @@ func (r *repository) Update(ctx context.Context, exp djoemo.UpdateExpression, qb
 	qry := qb.Build()
 
 	return r.djoemo.UpdateWithContext(ctx, exp, qry, values)
+}
+
+// OptimisticLockSave accept a struct that implement the VersionedModel interface and stores the element if the version
+// does not exist or the entry is still on the old version
+func (r *repository) OptimisticLockSave(ctx context.Context, value VersionedModel) (bool, error) {
+	_, span := r.tracer.StartSubSpan(ctx, "ddb.OptimisticLockSave")
+	defer span.Finish()
+
+	currentVersion := value.GetVersion()
+	value.IncreaseVersion()
+
+	update := r.table.Put(value).If("attribute_not_exists(version) OR version = ?", currentVersion)
+	err := update.Run()
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (r *repository) QueryBuilder() QueryBuilder {

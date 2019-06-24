@@ -11,7 +11,6 @@ require (
 	github.com/alicebob/miniredis v2.4.6+incompatible
 	github.com/aws/aws-sdk-go v1.19.6
 	github.com/aws/aws-xray-sdk-go v0.9.4
-	github.com/bsm/redis-lock v8.0.0+incompatible
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/certifi/gocertifi v0.0.0-20180118203423-deb3ae2ef261 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
