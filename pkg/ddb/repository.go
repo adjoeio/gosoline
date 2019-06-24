@@ -32,6 +32,7 @@ type Repository interface {
 
 	GetItem(ctx context.Context, qb QueryBuilder, result interface{}) (bool, error)
 	GetItems(ctx context.Context, qb QueryBuilder, result interface{}) (bool, error)
+	GetTable() *dynamo.Table
 	Query(ctx context.Context, qb QueryBuilder, result interface{}) error
 	Save(ctx context.Context, item interface{}) error
 	Update(ctx context.Context, exp djoemo.UpdateExpression, qb QueryBuilder, values map[string]interface{}) error
@@ -185,6 +186,10 @@ func (r *repository) GetItems(ctx context.Context, qb QueryBuilder, result inter
 	found := reflectValue.Elem().Len() > 0
 
 	return found, err
+}
+
+func (r *repository) GetTable() *dynamo.Table {
+	return r.table
 }
 
 func (r *repository) Query(ctx context.Context, qb QueryBuilder, result interface{}) error {

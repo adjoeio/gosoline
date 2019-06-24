@@ -5,6 +5,7 @@ package mocks
 import context "context"
 import ddb "github.com/applike/gosoline/pkg/ddb"
 import djoemo "github.com/adjoeio/djoemo"
+import dynamo "github.com/guregu/dynamo"
 import mdl "github.com/applike/gosoline/pkg/mdl"
 import mock "github.com/stretchr/testify/mock"
 
@@ -78,6 +79,22 @@ func (_m *Repository) GetModelId() mdl.ModelId {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(mdl.ModelId)
+	}
+
+	return r0
+}
+
+// GetTable provides a mock function with given fields:
+func (_m *Repository) GetTable() *dynamo.Table {
+	ret := _m.Called()
+
+	var r0 *dynamo.Table
+	if rf, ok := ret.Get(0).(func() *dynamo.Table); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*dynamo.Table)
+		}
 	}
 
 	return r0
