@@ -26,6 +26,14 @@ type Client interface {
 	HGet(key, field string) (string, error)
 	HSet(key, field string, value interface{}) error
 
+	Incr(key string) (int64, error)
+	IncrBy(key string, amount int64) (int64, error)
+	Decr(key string) (int64, error)
+	DecrBy(key string, amount int64) (int64, error)
+
+	Exists(key string) (int64, error)
+	Expire(key string, ttl time.Duration) (bool, error)
+
 	Pipeline() baseRedis.Pipeliner
 }
 
@@ -73,6 +81,30 @@ func (c *redisClient) HGet(key, field string) (string, error) {
 
 func (c *redisClient) HSet(key, field string, value interface{}) error {
 	return c.base.HSet(key, field, value).Err()
+}
+
+func (c *redisClient) Incr(key string) (int64, error) {
+	return c.base.Incr(key).Result()
+}
+
+func (c *redisClient) IncrBy(key string, amount int64) (int64, error) {
+	return c.base.IncrBy(key, amount).Result()
+}
+
+func (c *redisClient) Decr(key string) (int64, error) {
+	return c.base.Decr(key).Result()
+}
+
+func (c *redisClient) DecrBy(key string, amount int64) (int64, error) {
+	return c.base.DecrBy(key, amount).Result()
+}
+
+func (c *redisClient) Exists(key string) (int64, error) {
+	return c.base.Exists(key).Result()
+}
+
+func (c *redisClient) Expire(key string, ttl time.Duration) (bool, error) {
+	return c.base.Expire(key, ttl).Result()
 }
 
 func (c *redisClient) Pipeline() baseRedis.Pipeliner {
