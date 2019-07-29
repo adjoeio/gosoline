@@ -18,7 +18,7 @@ func NewMetricHook() *metricHook {
 	}
 }
 
-func (h metricHook) Fire(level string, msg string, err error, fields Fields, tags Tags, configValues ConfigValues, context context.Context, ecsMetadata EcsMetadata) {
+func (h metricHook) Fire(level string, msg string, err error, fields Fields, contextFields ContextFields, tags Tags, configValues ConfigValues, context context.Context, ecsMetadata EcsMetadata) {
 	if level != Warn && level != Error {
 		return
 	}
