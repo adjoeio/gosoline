@@ -30,6 +30,7 @@ type Repository interface {
 	GetModelId() mdl.ModelId
 	CreateTable(model interface{}) error
 
+	DeleteItem(ctx context.Context, qb QueryBuilder) error
 	GetItem(ctx context.Context, qb QueryBuilder, result interface{}) (bool, error)
 	GetItems(ctx context.Context, qb QueryBuilder, result interface{}) (bool, error)
 	Query(ctx context.Context, qb QueryBuilder, result interface{}) error
@@ -40,6 +41,7 @@ type Repository interface {
 
 //go:generate mockery -name DjoemoeRepository
 type DjoemoeRepository interface {
+	DeleteItemWithContext(ctx context.Context, key djoemo.KeyInterface) error
 	GIndex(name string) djoemo.GlobalIndexInterface
 	GetItem(key djoemo.KeyInterface, item interface{}) (bool, error)
 	GetItems(key djoemo.KeyInterface, items interface{}) (bool, error)
@@ -147,6 +149,14 @@ func (r *repository) CreateTable(model interface{}) error {
 	r.exists = true
 
 	return nil
+}
+
+func (r *repository) DeleteItem(ctx context.Context, qb QueryBuilder) error {
+	_, span := r.tracer.StartSubSpan(ctx, "ddb.DeleteItem")
+	defer span.Finish()
+
+	qry := qb.Build()
+	return r.djoemo.DeleteItemWithContext(ctx, qry)
 }
 
 func (r *repository) GetItem(ctx context.Context, qb QueryBuilder, result interface{}) (bool, error) {

@@ -53,6 +53,19 @@ func TestRepository_CreateTable(t *testing.T) {
 	assert.Nil(t, err, "there should be no error")
 }
 
+func TestRepository_DeleteItem(t *testing.T) {
+	dyn, r, dj := getMocks()
+
+	qb := ddb.NewQueryBuilder("test-test-test-test-test")
+
+	dj.On("DeleteItemWithContext", mock.AnythingOfType("*context.emptyCtx"), qb.Build()).Return(nil)
+	err := r.DeleteItem(context.TODO(), qb)
+	assert.NoError(t, err)
+
+	dyn.AssertExpectations(t)
+	dj.AssertExpectations(t)
+}
+
 func TestRepository_GetItem(t *testing.T) {
 	dyn, r, dj := getMocks()
 

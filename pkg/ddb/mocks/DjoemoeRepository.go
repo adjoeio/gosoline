@@ -12,6 +12,20 @@ type DjoemoeRepository struct {
 	mock.Mock
 }
 
+// DeleteItemWithContext provides a mock function with given fields: ctx, key
+func (_m *DjoemoeRepository) DeleteItemWithContext(ctx context.Context, key djoemo.KeyInterface) error {
+	ret := _m.Called(ctx, key)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, djoemo.KeyInterface) error); ok {
+		r0 = rf(ctx, key)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GIndex provides a mock function with given fields: name
 func (_m *DjoemoeRepository) GIndex(name string) djoemo.GlobalIndexInterface {
 	ret := _m.Called(name)

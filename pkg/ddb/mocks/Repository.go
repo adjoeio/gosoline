@@ -27,6 +27,20 @@ func (_m *Repository) CreateTable(model interface{}) error {
 	return r0
 }
 
+// DeleteItem provides a mock function with given fields: ctx, qb
+func (_m *Repository) DeleteItem(ctx context.Context, qb ddb.QueryBuilder) error {
+	ret := _m.Called(ctx, qb)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, ddb.QueryBuilder) error); ok {
+		r0 = rf(ctx, qb)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetItem provides a mock function with given fields: ctx, qb, result
 func (_m *Repository) GetItem(ctx context.Context, qb ddb.QueryBuilder, result interface{}) (bool, error) {
 	ret := _m.Called(ctx, qb, result)
