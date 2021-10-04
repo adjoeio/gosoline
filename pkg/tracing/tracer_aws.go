@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-xray-sdk-go/xray"
 	"net"
 	"net/http"
+	"strconv"
 )
 
 const (
@@ -147,13 +148,17 @@ func lookupAddr(appId cfg.AppId, settings *TracerSettings) string {
 		}
 
 		_, srvs, err := net.LookupSRV("", "", addressValue)
-
 		if err != nil {
 			panic(err)
 		}
 
 		for _, srv := range srvs {
+			addressValue = net.JoinHostPort(srv.Target, strconv.Itoa(int(srv.Port)))
 			addressValue = fmt.Sprintf("%v:%v", srv.Target, srv.Port)
+			_, err = net.ResolveUDPAddr("udp", addressValue)
+			if err != nil {
+				continue
+			}
 			break
 		}
 	}
