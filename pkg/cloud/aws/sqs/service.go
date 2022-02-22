@@ -201,7 +201,7 @@ func (s *service) GetUrl(ctx context.Context, name string) (string, error) {
 			return "", nil
 		}
 
-		return "", nil
+		return "", err
 	}
 
 	return *out.QueueUrl, nil
