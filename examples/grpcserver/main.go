@@ -11,6 +11,7 @@ import (
 func main() {
 	// initialize the application
 	app := application.New(
+		application.WithMetricDaemon,
 		application.WithConfigFile("./config.dist.yml", "yml"), // read config form config.dist.yml file
 		application.WithLoggerHandlersFromConfig,               // enable logging based on config
 	)

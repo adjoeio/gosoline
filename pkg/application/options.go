@@ -17,6 +17,7 @@ import (
 	kernelPkg "github.com/justtrackio/gosoline/pkg/kernel"
 	"github.com/justtrackio/gosoline/pkg/log"
 	"github.com/justtrackio/gosoline/pkg/metric"
+	prometheusHttp "github.com/justtrackio/gosoline/pkg/metric/prometheus/http"
 	"github.com/justtrackio/gosoline/pkg/stream"
 	"github.com/justtrackio/gosoline/pkg/tracing"
 	"github.com/pkg/errors"
@@ -269,6 +270,10 @@ func WithProducerDaemon(app *App) {
 
 func WithProfiling() Option {
 	return WithModule("profiling", apiserver.NewProfiling())
+}
+
+func WithPrometheusMetricServer(app *App) {
+	WithModule("prometheus", prometheusHttp.New())(app)
 }
 
 func WithTracing(app *App) {

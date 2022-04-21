@@ -1,0 +1,25 @@
+env: dev
+
+app_project: gosoline
+app_family: metrics
+app_name: prometheus
+
+api:
+  port: 8088
+  mode: debug
+  timeout:
+    read: 5s
+    write: 5s
+    idle: 5s
+
+prometheus:
+  api:
+    port: 8092
+    path: /metrics
+
+metric:
+  enabled: true
+  interval: 10s
+  writers: [prom]
+  prometheus:
+    metric_limit: 5000
