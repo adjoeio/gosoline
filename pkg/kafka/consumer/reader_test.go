@@ -14,9 +14,9 @@ import (
 var (
 	readerDialer = &kafka.Dialer{ClientID: "my-client"}
 	readerConf   = (&consumer.Settings{
-		Topic:   "my-topic",
-		FQTopic: "test-my-topic",
-		GroupID: "my-group",
+		Topic:     "my-topic",
+		FQTopic:   "test-my-topic",
+		FQGroupID: "my-group",
 	}).WithConnection(&connection.Settings{
 		Bootstrap: []string{"kafka.domain.tld:9094"},
 	})
@@ -35,7 +35,7 @@ func TestSaneDefaults(t *testing.T) {
 	assert.Equal(t, reader.Config().Brokers, readerConf.Connection().Bootstrap)
 
 	assert.Equal(t, reader.Config().Topic, readerConf.FQTopic)
-	assert.Equal(t, reader.Config().GroupID, readerConf.GroupID)
+	assert.Equal(t, reader.Config().GroupID, readerConf.FQGroupID)
 }
 
 func TestFallsbackToSaneDefaults(t *testing.T) {

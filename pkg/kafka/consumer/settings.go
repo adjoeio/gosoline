@@ -13,10 +13,12 @@ type Settings struct {
 	ConnectionName string `cfg:"connection" validate:"required"`
 	connection     *connection.Settings
 
-	Topic string `cfg:"topic" validate:"required"`
-	// FQTopic is the fully-qualified topic name (with prefixes).
-	FQTopic      string
-	GroupID      string
+	Topic   string `cfg:"topic" validate:"required"`
+	GroupID string `cfg:"group_id"`
+	// FQTopic is the fully-qualified topic name (with prefix).
+	FQTopic string
+	// FQTopic is the fully-qualified group id (with prefix).
+	FQGroupID    string
 	BatchSize    int           `cfg:"batch_size" default:"1"`
 	BatchTimeout time.Duration `cfg:"idle_timeout" default:"1s"`
 }
@@ -35,7 +37,7 @@ func ParseSettings(c cfg.Config, key string) *Settings {
 	c.UnmarshalKey(key, settings)
 
 	settings.connection = connection.ParseSettings(c, settings.ConnectionName)
-	settings.GroupID = cfg.GetAppIdFromConfig(c).Application
+	settings.FQGroupID = kafka.FQGroupId(cfg.GetAppIdFromConfig(c), settings.GroupID)
 	settings.FQTopic = kafka.FQTopicName(cfg.GetAppIdFromConfig(c), settings.Topic)
 
 	return settings

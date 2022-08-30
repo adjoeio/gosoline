@@ -44,7 +44,7 @@ func NewReader(
 
 		// Topic.
 		Topic:                 conf.FQTopic,
-		GroupID:               conf.GroupID,
+		GroupID:               conf.FQGroupID,
 		WatchPartitionChanges: true,
 
 		// No batching by default.
