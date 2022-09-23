@@ -123,6 +123,7 @@ func (w *promWriter) promMetric(data *Datum, metricFactory promMetricFactory, me
 		var err error
 		metric, err = w.addMetric(metricFactory, data)
 		if err != nil {
+			w.logger.WithFields(log.Fields{"error": err}).Error("failed to write metric")
 			return
 		}
 	}
@@ -203,17 +204,28 @@ func (w *promWriter) promHistogram(data *Datum) {
 	w.promMetric(data, histogramFactory, histogramPersister)
 }
 
-func (w *promWriter) addMetric(metricFactory promMetricFactory, data *Datum) (prometheus.Metric, error) {
+func (w *promWriter) addMetric(metricFactory promMetricFactory, data *Datum) (metric prometheus.Metric, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			switch e := r.(type) {
+			case error:
+				err = fmt.Errorf("metric.prom: failed to write metric: %w", e)
+			default:
+				err = fmt.Errorf("metric.prom: failed to write metric: %v", e)
+			}
+		}
+	}()
+
 	if atomic.LoadInt64(w.metrics) >= w.metricLimit {
 		w.logger.Error("fail to write metric due to exceeding limit")
 		return nil, errors.New("metric limit exceeded")
 	}
 
-	metric := metricFactory(data)
+	metric = metricFactory(data)
 	w.promMetrics.Store(data.Id(), metric)
 	atomic.AddInt64(w.metrics, 1)
 
-	return metric, nil
+	return metric, err
 }
 
 func (w *promWriter) buildHelp(data *Datum) string {
