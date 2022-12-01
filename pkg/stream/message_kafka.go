@@ -10,6 +10,8 @@ import (
 const (
 	AttributeKafkaOriginalMessage = "KafkaOriginal"
 	AttributeKafkaKey             = "KafkaKey"
+	AttributeKafkaOffset          = "KafkaOffset"
+	AttributeKafkaPartition       = "KafkaPartition"
 )
 
 type KafkaSourceMessage struct {
@@ -41,6 +43,8 @@ func KafkaToGosoAttributes(headers []kafka.Header, attributes map[string]interfa
 func KafkaToGosoMessage(k kafka.Message) *Message {
 	attributes := KafkaToGosoAttributes(k.Headers, map[string]interface{}{
 		AttributeKafkaOriginalMessage: KafkaSourceMessage{Message: k},
+		AttributeKafkaOffset:          k.Offset,
+		AttributeKafkaPartition:       k.Partition,
 	})
 
 	return &Message{Body: string(k.Value), Attributes: attributes}
