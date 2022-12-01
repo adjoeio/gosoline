@@ -49,7 +49,7 @@ func NewConsumer(
 		return nil, fmt.Errorf("failed to create healthcheck timer: %w", err)
 	}
 
-	manager := NewOffsetManager(logger, reader, settings.BatchSize, settings.BatchTimeout, healthCheckTimer)
+	manager := NewOffsetManager(logger, reader, settings, healthCheckTimer)
 
 	return NewConsumerWithInterfaces(settings, logger, manager)
 }
@@ -77,9 +77,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 	c.logger.Info("starting consumer")
 	defer c.logger.Info("shutdown consumer")
 
-	c.pool.GoWithContext(ctx, c.run)
-
-	return c.pool.Wait()
+	return c.run(c.pool.Context(ctx))
 }
 
 func (c *Consumer) IsHealthy() bool {
@@ -96,18 +94,19 @@ func (c *Consumer) Commit(ctx context.Context, msgs ...kafka.Message) error {
 
 func (c *Consumer) run(ctx context.Context) error {
 	c.pool.GoWithContext(ctx, c.manager.Start)
-
 	defer close(c.backlog)
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
+OUT:
+	for ctx.Err() == nil {
 		for _, msg := range c.manager.Batch(ctx) {
-			c.backlog <- msg
+			select {
+			case c.backlog <- msg:
+			case <-ctx.Done():
+				break OUT
+			}
 		}
 	}
+
+	c.pool.Wait()
+	return c.pool.Err()
 }

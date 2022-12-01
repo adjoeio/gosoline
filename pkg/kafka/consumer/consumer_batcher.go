@@ -9,6 +9,11 @@ import (
 
 var _ Batcher = &batcher{}
 
+const (
+	minBatchSize    = 1
+	minBatchTimeout = 10 * time.Millisecond
+)
+
 //go:generate go run github.com/vektra/mockery/v2 --name Batcher --unroll-variadic=False
 type Batcher interface {
 	Get(ctx context.Context) []kafka.Message
@@ -17,32 +22,43 @@ type Batcher interface {
 type batcher struct {
 	input chan kafka.Message
 
-	batchSize    int
-	batchTimeout time.Duration
+	BatchSize    int
+	BatchTimeout time.Duration
 }
 
 func NewBatcher(input chan kafka.Message, size int, timeout time.Duration) *batcher {
-	if timeout < time.Second {
-		timeout = time.Second
+	if size < minBatchSize {
+		size = minBatchSize
+	}
+	if timeout < minBatchTimeout {
+		timeout = minBatchTimeout
 	}
 
-	return &batcher{input: input, batchSize: size, batchTimeout: timeout}
+	return &batcher{input: input, BatchSize: size, BatchTimeout: timeout}
 }
 
 func (b *batcher) Get(ctx context.Context) []kafka.Message {
-	ticker := time.NewTicker(b.batchTimeout)
+	ticker := time.NewTicker(b.BatchTimeout)
 	defer ticker.Stop()
 
-	batch := []kafka.Message{}
+	var (
+		batch     = []kafka.Message{}
+		processed = map[Offset]bool{}
+	)
 
 OUT:
-	for len(batch) < b.batchSize {
+	for len(batch) < b.BatchSize {
 		select {
 		case m, ok := <-b.input:
 			if !ok {
 				break OUT
 			}
 
+			if _, ok := processed[Offset{Partition: m.Partition, Index: m.Offset}]; ok {
+				// skip already processed message
+				continue
+			}
+			processed[Offset{Partition: m.Partition, Index: m.Offset}] = true
 			batch = append(batch, m)
 
 		case <-ticker.C:

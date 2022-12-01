@@ -60,3 +60,48 @@ func TestConsumer_Manager_Batch_Commit(t *testing.T) {
 	// Should not succeed.
 	assert.NotNil(t, con.Commit(ctx, kafka.Message{Offset: 2, Partition: 2}))
 }
+
+func TestConsumer_Manager_Batch_Graceful_Exit(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	defer cancel()
+
+	var (
+		manager    = &mocks.OffsetManager{}
+		managerErr = errors.New("manager: failed")
+	)
+
+
+	manager.EXPECT().Start(matcher.Context).RunAndReturn(func(ctx context.Context) error {
+		select {
+		case <-time.After(time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+		return managerErr
+	})
+	manager.EXPECT().Batch(matcher.Context).RunAndReturn(
+		func(ctx context.Context) []kafka.Message {
+			select {
+			case <-time.After(time.Hour):
+			case <-ctx.Done():
+				return []kafka.Message{}
+			}
+
+			return []kafka.Message{}
+		})
+	defer manager.AssertExpectations(t)
+
+	con, err := consumer.NewConsumerWithInterfaces(
+		&consumer.Settings{
+			BatchSize:    1000,
+			BatchTimeout: time.Second,
+		},
+		logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t)),
+		manager,
+	)
+	assert.Nil(t, err)
+
+	err = con.Run(ctx)
+	assert.ErrorIs(t, err, managerErr)
+}
