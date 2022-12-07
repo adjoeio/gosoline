@@ -60,6 +60,8 @@ func NewReader(
 		MaxAttempts:    DefaultMaxRetryAttempts,
 		IsolationLevel: kafka.ReadCommitted,
 
+		StartOffset: kafka.LastOffset,
+
 		Logger:      logging.NewKafkaLogger(logger).DebugLogger(),
 		ErrorLogger: logging.NewKafkaLogger(logger).ErrorLogger(),
 	}
