@@ -2,6 +2,7 @@ package grpcserver
 
 import (
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -77,6 +78,10 @@ func (s *statsHolder) GetLoggerFields() log.Fields {
 	outHeaders := syncMapToMapStringString(s.OutHeaders)
 	for k, v := range outHeaders {
 		fields[k] = v
+	}
+
+	if s.Error != nil {
+		fields["stacktrace"] = string(debug.Stack())
 	}
 
 	return fields
