@@ -23,7 +23,11 @@ func TestConsumer_Manager_Batch_Commit(t *testing.T) {
 		manager        = &mocks.OffsetManager{}
 	)
 
-	manager.On("Start", mock.Anything).Return(func(ctx context.Context) { <-ctx.Done() })
+	manager.On("Start", mock.Anything).Return(
+		func(ctx context.Context) error {
+			<-ctx.Done()
+			return ctx.Err()
+		})
 	manager.On("Batch", mock.Anything).Return(
 		func(ctx context.Context) []kafka.Message {
 			defer func() {
@@ -51,11 +55,8 @@ func TestConsumer_Manager_Batch_Commit(t *testing.T) {
 	)
 	assert.Nil(t, err)
 
-	go func() {
-		_ = con.Run(ctx)
-	}()
+	_ = con.Run(ctx)
 
-	<-ctx.Done()
 	assert.Equal(t, kafka.Message{Offset: 1, Partition: 1}, <-con.Data())
 	assert.Equal(t, kafka.Message{Offset: 2, Partition: 2}, <-con.Data())
 	assert.Equal(t, kafka.Message{Offset: 3, Partition: 3}, <-con.Data())
@@ -64,4 +65,52 @@ func TestConsumer_Manager_Batch_Commit(t *testing.T) {
 	assert.Nil(t, con.Commit(ctx, kafka.Message{Offset: 1, Partition: 1}))
 	// Should not succeed.
 	assert.NotNil(t, con.Commit(ctx, kafka.Message{Offset: 2, Partition: 2}))
+}
+
+func TestConsumer_Manager_Batch_Graceful_Exit(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	defer cancel()
+
+	var (
+		manager    = &mocks.OffsetManager{}
+		managerErr = errors.New("manager: failed")
+	)
+
+	manager.On("Start", mock.Anything).Return(func(ctx context.Context) error {
+		select {
+		case <-time.After(time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+		return managerErr
+	})
+	manager.On("Batch", mock.Anything).Return(
+		func(ctx context.Context) []kafka.Message {
+			select {
+			case <-time.After(time.Hour):
+			case <-ctx.Done():
+				return []kafka.Message{}
+			}
+
+			return []kafka.Message{}
+		},
+		func(ctx context.Context) error {
+			return nil
+		},
+	)
+	defer manager.AssertExpectations(t)
+
+	con, err := consumer.NewConsumerWithInterfaces(
+		&consumer.Settings{
+			BatchSize:    1000,
+			BatchTimeout: time.Second,
+		},
+		logMocks.NewLoggerMockedAll(),
+		manager,
+	)
+	assert.Nil(t, err)
+
+	err = con.Run(ctx)
+	assert.ErrorIs(t, err, managerErr)
 }

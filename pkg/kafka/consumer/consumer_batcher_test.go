@@ -10,7 +10,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func TestBatcher(t *testing.T) {
+func Test_Batcher_Batch(t *testing.T) {
 	type args struct {
 		batchSize    int
 		batchTimeout time.Duration
@@ -199,4 +199,11 @@ func TestBatcher(t *testing.T) {
 		})
 	}
 
+}
+
+func Test_Batcher_SensibleDefaults(t *testing.T) {
+	batcher := consumer.NewBatcher(make(chan kafka.Message, 1), 0, 0)
+
+	assert.Equal(t, 1, batcher.BatchSize)
+	assert.Equal(t, 10*time.Millisecond, batcher.BatchTimeout)
 }

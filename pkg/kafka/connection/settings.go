@@ -9,6 +9,7 @@ import (
 type Settings struct {
 	// Connection.
 	Bootstrap          []string `cfg:"bootstrap" validate:"required"`
+	UseTLS             bool     `cfg:"use_tls" default:"true"`
 	InsecureSkipVerify bool     `cfg:"insecure_skip_verify"`
 
 	// Credentials.

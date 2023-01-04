@@ -26,7 +26,9 @@ func TestSaneDefaults(t *testing.T) {
 	reader, err := consumer.NewReader(logMocks.NewLoggerMockedAll(), readerDialer, readerConf)
 	assert.Nil(t, err)
 
-	assert.Equal(t, int(reader.Config().MaxAttempts), 3)
+	assert.Equal(t, int(reader.Config().MaxAttempts), 15)
+	assert.Equal(t, reader.Config().ReadBackoffMin, 250*time.Millisecond)
+	assert.Equal(t, reader.Config().ReadBackoffMax, 2*time.Second)
 
 	assert.Equal(t, reader.Config().MaxBytes, 1000000)
 	assert.Equal(t, reader.Config().CommitInterval, time.Duration(0))
