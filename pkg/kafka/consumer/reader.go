@@ -11,7 +11,13 @@ import (
 
 const (
 	// DefaultMaxRetryAttempts is how many times to retry a failed operation.
-	DefaultMaxRetryAttempts = 3
+	DefaultMaxRetryAttempts = 15
+
+	// DefaultMinRetryWaitTime is lower limit for backoff interval.
+	DefaultMinRetryWaitTime = 250 * time.Millisecond
+
+	// DefaultMaxRetryWaitTime is upper limit for backoff interval.
+	DefaultMaxRetryWaitTime = 2 * time.Second
 
 	// DefaultConsumerGroupRetentionTime is the retention period of current offsets.
 	DefaultConsumerGroupRetentionTime = 7 * 24 * time.Hour
@@ -58,6 +64,9 @@ func NewReader(
 		// Safe defaults.
 		RetentionTime:  DefaultConsumerGroupRetentionTime,
 		MaxAttempts:    DefaultMaxRetryAttempts,
+		ReadBackoffMin: DefaultMinRetryWaitTime,
+		ReadBackoffMax: DefaultMaxRetryWaitTime,
+
 		IsolationLevel: kafka.ReadCommitted,
 
 		StartOffset: kafka.LastOffset,
