@@ -20,7 +20,7 @@ type Settings struct {
 	// FQTopic is the fully-qualified group id (with prefix).
 	FQGroupID    string
 	BatchSize    int           `cfg:"batch_size" default:"1"`
-	BatchTimeout time.Duration `cfg:"idle_timeout" default:"1s"`
+	BatchTimeout time.Duration `cfg:"idle_timeout" default:"10ms"`
 }
 
 func (s *Settings) Connection() *connection.Settings {

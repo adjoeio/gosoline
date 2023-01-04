@@ -24,15 +24,20 @@ func NewDialer(conf *Settings) (*kafka.Dialer, error) {
 		return nil, err
 	}
 
-	return &kafka.Dialer{
+	dialer := &kafka.Dialer{
 		DualStack: true,
-		TLS: &tls.Config{
-			InsecureSkipVerify: conf.InsecureSkipVerify,
-			MinVersion:         tls.VersionTLS12,
-		},
+
 		SASLMechanism:   mechanism,
 		KeepAlive:       DefaultKeepAlive,
 		Timeout:         DefaultDialerTimeout,
 		TransactionalID: uuid.New().String(),
-	}, nil
+	}
+	if conf.UseTLS {
+		dialer.TLS = &tls.Config{
+			InsecureSkipVerify: conf.InsecureSkipVerify,
+			MinVersion:         tls.VersionTLS12,
+		}
+	}
+
+	return dialer, nil
 }
