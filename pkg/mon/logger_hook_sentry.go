@@ -53,10 +53,10 @@ func (h SentryHook) Fire(_ string, _ string, err error, data *Metadata) error {
 	extra = mergeMapStringInterface(extra, data.ContextFields)
 	packet := raven.NewPacketWithExtra(err.Error(), extra, exception)
 
-	_, res := h.sentry.Capture(packet, stringTags)
-	err = <-res
+	// don't wait for sentry response
+	_, _ = h.sentry.Capture(packet, stringTags)
 
 	data.Fields["sentry_event_id"] = packet.EventID
 
-	return err
+	return nil
 }
