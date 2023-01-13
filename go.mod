@@ -1,5 +1,7 @@
 module github.com/applike/gosoline
 
+go 1.19
+
 require (
 	github.com/DATA-DOG/go-sqlmock v1.3.0
 	github.com/DataDog/zstd v1.4.4 // indirect
@@ -89,5 +91,3 @@ require (
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20191120175047-4206685974f2
 )
-
-go 1.13
