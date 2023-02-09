@@ -38,3 +38,9 @@ func (m *Message) UnmarshalFromBytes(data []byte) error {
 func (m *Message) UnmarshalFromString(data string) error {
 	return m.UnmarshalFromBytes([]byte(data))
 }
+
+func (m *Message) WithGzipCompression() *Message {
+	m.Attributes[AttributeCompression] = CompressionGZip
+
+	return m
+}
