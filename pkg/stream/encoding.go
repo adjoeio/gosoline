@@ -2,12 +2,15 @@ package stream
 
 import (
 	"fmt"
+
+	"github.com/spf13/cast"
 )
 
 type EncodingType string
 
 const (
 	EncodingJson     EncodingType = "application/json"
+	EncodingText     EncodingType = "text/plain"
 	EncodingProtobuf EncodingType = "application/x-protobuf"
 )
 
@@ -31,6 +34,7 @@ type MessageBodyEncoder interface {
 var messageBodyEncoders = map[EncodingType]MessageBodyEncoder{
 	EncodingJson:     new(jsonEncoder),
 	EncodingProtobuf: new(protobufEncoder),
+	EncodingText:     new(textEncoder),
 }
 
 func AddMessageBodyEncoder(encoding EncodingType, encoder MessageBodyEncoder) {
@@ -67,6 +71,29 @@ func DecodeMessage(encoding EncodingType, data []byte, out interface{}) error {
 	if err != nil {
 		return fmt.Errorf("can not decode message body with encoding '%s': %w", encoding, err)
 	}
+
+	return nil
+}
+
+type textEncoder struct{}
+
+func (e textEncoder) Encode(data interface{}) ([]byte, error) {
+	if bts, ok := data.([]byte); ok {
+		return bts, nil
+	}
+
+	str, err := cast.ToStringE(data)
+
+	return []byte(str), err
+}
+
+func (e textEncoder) Decode(data []byte, out interface{}) error {
+	bts, ok := out.(*[]byte)
+	if !ok {
+		return fmt.Errorf("the out parameter of the text decode has to be a pointer to byte slice")
+	}
+
+	*bts = append(*bts, data...)
 
 	return nil
 }
