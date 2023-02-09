@@ -180,6 +180,10 @@ func lookupAddr(appId cfg.AppId, settings *TracerSettings) string {
 
 		for _, srv := range srvs {
 			addressValue = fmt.Sprintf("%v:%v", srv.Target, srv.Port)
+			_, err = net.ResolveUDPAddr("udp", addressValue)
+			if err != nil {
+				continue
+			}
 			break
 		}
 	}
