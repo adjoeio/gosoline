@@ -74,6 +74,7 @@ type Settings struct {
 	RetryWaitTime    time.Duration `cfg:"retry_wait_time" default:"100ms"`
 	RetryMaxWaitTime time.Duration `cfg:"retry_max_wait_time" default:"2000ms"`
 	FollowRedirects  bool          `cfg:"follow_redirects" default:"true"`
+	DisableCookies   bool          `cfg:"disable_cookies" default:"false"`
 }
 
 func NewHttpClient(config cfg.Config, logger log.Logger) Client {
@@ -94,7 +95,13 @@ func NewHttpClient(config cfg.Config, logger log.Logger) Client {
 		logger.Warn("http_client_request_timeout is deprecated, use http_client.request_timeout instead")
 	}
 
-	httpClient := resty.New()
+	var httpClient *resty.Client
+	if settings.DisableCookies {
+		httpClient = resty.NewWithClient(&http.Client{})
+	} else {
+		httpClient = resty.New()
+	}
+
 	if settings.FollowRedirects {
 		httpClient.SetRedirectPolicy(resty.FlexibleRedirectPolicy(10))
 	} else {
