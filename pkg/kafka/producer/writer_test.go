@@ -32,7 +32,7 @@ var (
 func TestTransport(t *testing.T) {
 	writer, err := producer.NewWriter(
 		logMocks.NewLoggerMockedAll(), writerDialer, writerConf.Connection().Bootstrap,
-		producer.WithAsyncWrites(),
+		producer.WithBalancer(&kafka.Hash{}),
 	)
 	assert.Nil(t, err)
 
@@ -102,7 +102,7 @@ func TestWithBatch(t *testing.T) {
 func TestWithAsyncWrites(t *testing.T) {
 	writer, err := producer.NewWriter(
 		logMocks.NewLoggerMockedAll(), writerDialer, writerConf.Connection().Bootstrap,
-		producer.WithAsyncWrites(),
+		producer.WithBalancer(&kafka.Hash{}),
 	)
 
 	assert.Nil(t, err)
