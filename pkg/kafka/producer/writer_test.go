@@ -32,7 +32,7 @@ var (
 func TestTransport(t *testing.T) {
 	writer, err := producer.NewWriter(
 		logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t)), writerDialer, writerConf.Connection().Bootstrap,
-		producer.WithAsyncWrites(),
+		producer.WithBalancer(&kafka.Hash{}),
 	)
 	assert.Nil(t, err)
 
@@ -58,10 +58,9 @@ func TestSaneDefaults(t *testing.T) {
 	// Endpoint
 	assert.Equal(t, writer.Addr.String(), writerConf.Connection().Bootstrap[0])
 
-	// Safetyß
+	// Safety
 	assert.Equal(t, int(writer.RequiredAcks), -1)
-	assert.Equal(t, writer.MaxAttempts, 3)
-	assert.Equal(t, writer.WriteTimeout, 30*time.Second)
+	assert.Equal(t, writer.MaxAttempts, 1)
 
 	// Non-batched by default.
 	assert.Equal(t, writer.BatchSize, 1)
@@ -107,4 +106,17 @@ func TestWithAsyncWrites(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, writer.Async)
+}
+
+func TestWithWriteTimeout(t *testing.T) {
+	const timeout = time.Second * 5
+	writer, err := producer.NewWriter(
+		logMocks.NewLoggerMockedAll(),
+		writerDialer,
+		writerConf.Connection().Bootstrap,
+		producer.WithWriteTimeout(timeout),
+	)
+	assert.Nil(t, err)
+
+	assert.Equal(t, writer.WriteTimeout, timeout)
 }

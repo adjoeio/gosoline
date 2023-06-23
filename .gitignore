@@ -7,3 +7,5 @@
 *.output.txt
 .DS_Store
 
+config.*.yml
+!config.dist.yml
