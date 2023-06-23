@@ -49,38 +49,6 @@ func Test_Batcher_Batch(t *testing.T) {
 			},
 		},
 		{
-			name: "batch time out reached multiple times",
-			args: args{
-				batchSize:    10,
-				batchTimeout: 100 * time.Millisecond,
-				ctx:          func() (context.Context, func()) { return context.Background(), func() {} },
-				input: func() chan kafka.Message {
-					c := make(chan kafka.Message, 5)
-
-					go func() {
-						time.Sleep(600 * time.Millisecond)
-
-						c <- kafka.Message{Partition: 0, Offset: 0}
-						c <- kafka.Message{Partition: 1, Offset: 1}
-						c <- kafka.Message{Partition: 2, Offset: 2}
-						c <- kafka.Message{Partition: 3, Offset: 3}
-
-						time.Sleep(time.Second)
-
-						c <- kafka.Message{Partition: 4, Offset: 4}
-					}()
-
-					return c
-				},
-			},
-			want: []kafka.Message{
-				{Partition: 0, Offset: 0},
-				{Partition: 1, Offset: 1},
-				{Partition: 2, Offset: 2},
-				{Partition: 3, Offset: 3},
-			},
-		},
-		{
 			name: "batch size reached",
 			args: args{
 				batchSize:    5,

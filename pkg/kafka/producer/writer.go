@@ -46,9 +46,8 @@ func NewWriter(
 ) (*kafka.Writer, error) {
 	// Config.
 	conf := &kafka.WriterConfig{
-		Brokers:  bootstrap,
-		Balancer: &kafka.Hash{},
-		Dialer:   dialer,
+		Brokers: bootstrap,
+		Dialer:  dialer,
 
 		// Non-batched by default.
 		BatchSize: 1,
