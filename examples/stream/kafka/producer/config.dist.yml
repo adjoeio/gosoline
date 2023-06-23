@@ -1,0 +1,28 @@
+env: dev
+
+app_project: gosoline
+app_family: example
+app_name: stream-kafka-output
+
+stream:
+  output:
+    example_records:
+      connection: default
+      type: kafka
+      topic: "{app_project}-{env}-{app_family}-{app_name}-records"
+      batch_size: 10
+      idle_timeout: 1s
+      balancer: active_partition_balancer
+  producer:
+    example_records:
+      output: example_records
+      encoding: application/json
+
+kafka:
+  connection:
+    default:
+      bootstrap:
+        - "{env}-kafka-external-bootstrap.kafka.svc.cluster.local:9094"
+      insecure_skip_verify: true
+      username: gosoline
+      password: pass
