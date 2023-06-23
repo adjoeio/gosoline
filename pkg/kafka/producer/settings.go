@@ -16,7 +16,11 @@ type Settings struct {
 	BatchSize    int           `cfg:"batch_size"`
 	BatchTimeout time.Duration `cfg:"idle_timeout"`
 	AsyncWrites  bool          `cfg:"async_writes"`
-	connection   *connection.Settings
+	Balancer     string        `cfg:"balancer" default:"default"`
+	Retries      int           `cfg:"retries" default:"5"`
+	WriteTimeout time.Duration `cfg:"write_timeout" default:"30s"`
+
+	connection *connection.Settings
 }
 
 func (s *Settings) Connection() *connection.Settings {
