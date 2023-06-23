@@ -20,7 +20,8 @@ func Test_Write_WriteOne(t *testing.T) {
 		logger      = logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t))
 		writer      = producerMocks.NewWriter(t)
 		conf        = &producer.Settings{
-			FQTopic: "fq-topic",
+			FQTopic:  "fq-topic",
+			Balancer: "default",
 		}
 		messages = []kafka.Message{
 			{
@@ -99,7 +100,7 @@ func Test_Write_WriteOne(t *testing.T) {
 		},
 	).Times(1)
 
-	prod, err := producer.NewProducerWithInterfaces(conf, logger, writer)
+	prod, err := producer.NewProducerWithInterfaces(conf, logger, writer, producer.NewKafkaHashBalancer())
 	assert.Nil(t, err)
 
 	// Data should contain batch size of messages after consumer is started.
