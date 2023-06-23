@@ -20,7 +20,8 @@ func Test_Write_WriteOne(t *testing.T) {
 		logger      = logMocks.NewLoggerMockedAll()
 		writer      = &producerMocks.Writer{}
 		conf        = &producer.Settings{
-			FQTopic: "fq-topic",
+			FQTopic:  "fq-topic",
+			Balancer: "default",
 		}
 		messages = []kafka.Message{
 			{

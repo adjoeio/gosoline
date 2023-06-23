@@ -17,6 +17,8 @@ type Settings struct {
 	BatchSize    int           `cfg:"batch_size"`
 	BatchTimeout time.Duration `cfg:"idle_timeout"`
 	AsyncWrites  bool          `cfg:"async_writes"`
+	Balancer     string        `cfg:"balancer" default:"default"`
+	Retries      int           `cfg:"retries" default:"5"`
 	connection   *connection.Settings
 }
 

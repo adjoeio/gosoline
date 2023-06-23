@@ -2,7 +2,6 @@ package producer
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/justtrackio/gosoline/pkg/cfg"
@@ -13,19 +12,16 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-var (
-	ErrInvalidMessage = errors.New("kafka: message is invalid")
-)
-
 type Producer struct {
 	Settings *Settings
 	Writer   Writer
 	Logger   log.Logger
 	pool     coffin.Coffin
+	balancer KafkaBalancer
 }
 
 // NewProducer returns a topic producer.
-func NewProducer(ctx context.Context, conf cfg.Config, logger log.Logger, name string) (*Producer, error) {
+func NewProducer(_ context.Context, conf cfg.Config, logger log.Logger, name string) (*Producer, error) {
 	settings := ParseSettings(conf, name)
 
 	// Connection.
@@ -57,6 +53,7 @@ func NewProducerWithInterfaces(conf *Settings, logger log.Logger, writer Writer)
 		Writer:   writer,
 		Logger:   logging.NewKafkaLogger(logger),
 		pool:     coffin.New(),
+		balancer: kafkaBalancers[conf.Balancer],
 	}, nil
 }
 
@@ -79,9 +76,6 @@ func (p *Producer) Write(ctx context.Context, ms ...kafka.Message) error {
 }
 
 func (p *Producer) write(ctx context.Context, ms ...kafka.Message) error {
-	ctx, cancel := context.WithTimeout(ctx, DefaultWriterWriteTimeout)
-	defer cancel()
-
 	p.Logger.Debug("producing messages")
 
 	// Prepare batch.
@@ -96,7 +90,41 @@ func (p *Producer) write(ctx context.Context, ms ...kafka.Message) error {
 		})
 	}
 
-	return p.Writer.WriteMessages(ctx, batch...)
+	return p.writeBatch(ctx, batch, 0)
+}
+
+func (p *Producer) writeBatch(ctx context.Context, batch []kafka.Message, attempt int) error {
+	attempt += 1
+	failedWrites := []kafka.Message{}
+
+	// if the error return is of type write Errors
+	switch err := p.Writer.WriteMessages(ctx, batch...).(type) {
+	case nil:
+		for i := range batch {
+			p.balancer.OnSuccess(batch[i])
+		}
+		return nil
+	case kafka.WriteErrors:
+		for i := range err {
+			if err[i] == nil {
+				p.balancer.OnSuccess(batch[i])
+				continue
+			}
+			p.Logger.WithFields(log.Fields{
+				"err": err[i],
+			}).Error("error while writing a message to kafka")
+			p.balancer.OnError(batch[i], err[i])
+			failedWrites = append(failedWrites, batch[i])
+		}
+
+		if attempt > p.Settings.Retries {
+			return err
+		}
+
+		return p.writeBatch(ctx, failedWrites, attempt)
+	default:
+		return err
+	}
 }
 
 func (p *Producer) flushOnExit(ctx context.Context) error {

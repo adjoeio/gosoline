@@ -46,6 +46,13 @@ func WithAsyncWrites() WriterOption {
 	}
 }
 
+// WithBalancer allows to overwrite the kafka Balancer.
+func WithBalancer(balancer kafka.Balancer) WriterOption {
+	return func(wc *kafka.WriterConfig) {
+		wc.Balancer = balancer
+	}
+}
+
 func getOptions(conf *Settings) []WriterOption {
 	opts := []WriterOption{}
 
@@ -55,10 +62,15 @@ func getOptions(conf *Settings) []WriterOption {
 			WithBatch(conf.BatchSize, conf.BatchTimeout),
 		)
 	}
+
 	if conf.AsyncWrites {
 		opts = append(opts,
 			WithAsyncWrites(),
 		)
+	}
+
+	if balancer, ok := kafkaBalancers[conf.Balancer]; ok {
+		opts = append(opts, WithBalancer(balancer))
 	}
 
 	return opts
