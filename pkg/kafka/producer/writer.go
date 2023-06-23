@@ -15,14 +15,8 @@ const (
 	// to be considered durable.
 	RequireAllReplicas = -1
 
-	// DefaultWriterWriteTimeout is how much to wait for a write to go through.
-	DefaultWriterWriteTimeout = 30 * time.Second
-
 	// DefaultWriterReadTimeout is how much to wait for reads.
 	DefaultWriterReadTimeout = 30 * time.Second
-
-	// DefaultMaxRetryAttempts is how many times to retry a failed operation.
-	DefaultMaxRetryAttempts = 3
 
 	// DefaultMetadataTTL is the frequency of metadata refreshes.
 	DefaultMetadataTTL = 5 * time.Second
@@ -46,9 +40,8 @@ func NewWriter(
 ) (*kafka.Writer, error) {
 	// Config.
 	conf := &kafka.WriterConfig{
-		Brokers:  bootstrap,
-		Balancer: &kafka.Hash{},
-		Dialer:   dialer,
+		Brokers: bootstrap,
+		Dialer:  dialer,
 
 		// Non-batched by default.
 		BatchSize: 1,
@@ -56,10 +49,12 @@ func NewWriter(
 
 		// Use a safe default for durability.
 		RequiredAcks: RequireAllReplicas,
-		MaxAttempts:  DefaultMaxRetryAttempts,
+		// MaxAttempts is set to 1 because the retries are handled by the producer.
+		// The amount of the retries is configurable via the producer Settings.Retries.
+		// NOTE: If MaxAttempts is set to 0, it will default to 10!
+		MaxAttempts: 1,
 
-		ReadTimeout:  DefaultWriterReadTimeout,
-		WriteTimeout: DefaultWriterWriteTimeout,
+		ReadTimeout: DefaultWriterReadTimeout,
 
 		CompressionCodec: kafka.Snappy.Codec(),
 
