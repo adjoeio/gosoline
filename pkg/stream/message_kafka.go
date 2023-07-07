@@ -21,7 +21,6 @@ func (k KafkaSourceMessage) MarshalJSON() ([]byte, error) {
 		"Time":      k.Time,
 		"Partition": k.Partition,
 		"Offset":    k.Offset,
-		"Headers":   KafkaHeadersToGosoAttributes(k.Headers),
 		"Key":       string(k.Key),
 	})
 }
