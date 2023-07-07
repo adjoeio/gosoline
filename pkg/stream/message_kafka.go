@@ -2,30 +2,55 @@ package stream
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/protocol"
 )
 
 const (
-	AttributeKafkaOriginalMessage = "KafkaOriginal"
+	AttributeKafkaMessageMetadata = "KafkaMetadata"
 	AttributeKafkaKey             = "KafkaKey"
-	AttributeKafkaOffset          = "KafkaOffset"
-	AttributeKafkaPartition       = "KafkaPartition"
 )
 
-type KafkaSourceMessage struct {
-	kafka.Message
+type KafkaMessageMetadata struct {
+	Topic         string
+	Partition     int
+	Offset        int64
+	HighWaterMark int64
+	Key           []byte
+	Time          time.Time
 }
 
-func (k KafkaSourceMessage) MarshalJSON() ([]byte, error) {
+func NewKafkaMessageMetadataFromKafkaMessage(message kafka.Message) KafkaMessageMetadata {
+	return KafkaMessageMetadata{
+		Topic:         message.Topic,
+		Partition:     message.Partition,
+		Offset:        message.Offset,
+		HighWaterMark: message.HighWaterMark,
+		Key:           message.Key,
+		Time:          message.Time,
+	}
+}
+
+func (k KafkaMessageMetadata) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		"Time":      k.Time,
 		"Partition": k.Partition,
 		"Offset":    k.Offset,
-		"Headers":   KafkaToGosoAttributes(k.Headers, map[string]interface{}{}),
 		"Key":       string(k.Key),
 	})
+}
+
+func (k KafkaMessageMetadata) ToKafkaMessageForAck() kafka.Message {
+	return kafka.Message{
+		Topic:         k.Topic,
+		Partition:     k.Partition,
+		Offset:        k.Offset,
+		HighWaterMark: k.HighWaterMark,
+		Key:           k.Key,
+		Time:          k.Time,
+	}
 }
 
 func NewKafkaMessageAttrs(key string) map[string]interface{} {
@@ -42,26 +67,24 @@ func KafkaToGosoAttributes(headers []kafka.Header, attributes map[string]interfa
 
 func KafkaToGosoMessage(k kafka.Message) *Message {
 	attributes := KafkaToGosoAttributes(k.Headers, map[string]interface{}{
-		AttributeKafkaOriginalMessage: KafkaSourceMessage{Message: k},
-		AttributeKafkaOffset:          k.Offset,
-		AttributeKafkaPartition:       k.Partition,
+		AttributeKafkaMessageMetadata: NewKafkaMessageMetadataFromKafkaMessage(k),
 	})
 
 	return &Message{Body: string(k.Value), Attributes: attributes}
 }
 
-func GosoToKafkaMessages(msgs ...*Message) []kafka.Message {
+func GosoToAckKafkaMessages(msgs ...*Message) []kafka.Message {
 	ks := []kafka.Message{}
 
 	for _, m := range msgs {
-		ks = append(ks, m.Attributes[AttributeKafkaOriginalMessage].(KafkaSourceMessage).Message)
+		ks = append(ks, m.Attributes[AttributeKafkaMessageMetadata].(KafkaMessageMetadata).ToKafkaMessageForAck())
 	}
 
 	return ks
 }
 
 func GosoToKafkaMessage(msg *Message) kafka.Message {
-	return GosoToKafkaMessages(msg)[0]
+	return GosoToAckKafkaMessages(msg)[0]
 }
 
 func NewKafkaMessage(writable WritableMessage) kafka.Message {

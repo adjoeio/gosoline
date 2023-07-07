@@ -78,5 +78,5 @@ func (i *KafkaInput) Ack(ctx context.Context, msg *Message, _ bool) error {
 // AckBatch does the same as calling Ack for every single message would, but it might use fewer calls to an external
 // service.
 func (i *KafkaInput) AckBatch(ctx context.Context, msgs []*Message, _ []bool) error {
-	return i.consumer.Commit(ctx, GosoToKafkaMessages(msgs...)...)
+	return i.consumer.Commit(ctx, GosoToAckKafkaMessages(msgs...)...)
 }
