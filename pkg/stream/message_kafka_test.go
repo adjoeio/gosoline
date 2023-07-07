@@ -5,9 +5,8 @@ import (
 	"testing"
 
 	"github.com/justtrackio/gosoline/pkg/stream"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/segmentio/kafka-go"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_NewKafkaMessageAttrs(t *testing.T) {
@@ -34,10 +33,8 @@ func Test_KafkaToGosoMessage(t *testing.T) {
 		&stream.Message{
 			Body: string(kMessage.Value),
 			Attributes: map[string]interface{}{
-				stream.AttributeKafkaOriginalMessage: stream.KafkaSourceMessage{
-					Message: kMessage,
-				},
-				"HeaderKey": "HeaderValue",
+				stream.AttributeKafkaMessageMetadata: stream.NewKafkaMessageMetadataFromKafkaMessage(kMessage),
+				"HeaderKey":                          "HeaderValue",
 			},
 		},
 	)
@@ -49,10 +46,7 @@ func Test_KafkaToGosoMessage(t *testing.T) {
 	assert.JSONEq(t, string(serialized), `{
 		"attributes": {
 			"HeaderKey": "HeaderValue",
-			"KafkaOriginal": {
-				"Headers": {
-					"HeaderKey": "HeaderValue"
-				},
+			"KafkaMetadata": {
 				"Key": "MessageKey",
 				"Offset": 0,
 				"Partition": 0,
@@ -76,6 +70,10 @@ func Test_GosoToKafkaMessages(t *testing.T) {
 			},
 		}
 
+		kMessage1Ack = kafka.Message{
+			Key: []byte("MessageKey1"),
+		}
+
 		kMessage2 = kafka.Message{
 			Key:   []byte("MessageKey2"),
 			Value: []byte("MessageValue2"),
@@ -86,27 +84,31 @@ func Test_GosoToKafkaMessages(t *testing.T) {
 				},
 			},
 		}
+
+		kMessage2Ack = kafka.Message{
+			Key: []byte("MessageKey2"),
+		}
 	)
 
-	assert.Equal(t, stream.GosoToKafkaMessages(
+	assert.Equal(t, stream.GosoToAckKafkaMessages(
 		&stream.Message{
 			Body: string(kMessage1.Value),
 			Attributes: map[string]interface{}{
-				stream.AttributeKafkaOriginalMessage: stream.KafkaSourceMessage{kMessage1},
+				stream.AttributeKafkaMessageMetadata: stream.NewKafkaMessageMetadataFromKafkaMessage(kMessage1),
 				kMessage1.Headers[0].Key:             string(kMessage1.Headers[0].Value),
 			},
 		},
 		&stream.Message{
 			Body: string(kMessage2.Value),
 			Attributes: map[string]interface{}{
-				stream.AttributeKafkaOriginalMessage: stream.KafkaSourceMessage{kMessage2},
+				stream.AttributeKafkaMessageMetadata: stream.NewKafkaMessageMetadataFromKafkaMessage(kMessage2),
 				kMessage2.Headers[0].Key:             string(kMessage2.Headers[0].Value),
 			},
 		},
 	),
 		[]kafka.Message{
-			kMessage1,
-			kMessage2,
+			kMessage1Ack,
+			kMessage2Ack,
 		},
 	)
 }
