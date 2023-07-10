@@ -51,13 +51,17 @@ func (module *Module) Run(ctx context.Context) error {
 func (module *Module) refresh(ctx context.Context) {
 	err := module.updaterService.EnsureRecentExchangeRates(ctx)
 	if err != nil {
-		module.logger.Error("failed to refresh currency exchange rates: %w", err)
+		module.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to refresh currency exchange rates")
 	}
 }
 
 func (module *Module) importExchangeRates(ctx context.Context) {
 	err := module.updaterService.EnsureHistoricalExchangeRates(ctx)
 	if err != nil {
-		module.logger.Error("failed to import historical currency exchange rates: %w", err)
+		module.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to import historical currency exchange rates")
 	}
 }

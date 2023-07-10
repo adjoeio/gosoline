@@ -321,8 +321,9 @@ func (c *ChangeHistoryManager) execute(statements []string) error {
 		_, err := c.orm.CommonDB().Exec(statement)
 		if err != nil {
 			c.logger.WithFields(log.Fields{
-				"sql": statement,
-			}).Error("could not migrate change history: %w", err)
+				"sql":   statement,
+				"error": err,
+			}).Error("could not migrate change history")
 
 			return fmt.Errorf("could not migrate change history: %w", err)
 		}

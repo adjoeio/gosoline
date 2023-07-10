@@ -146,7 +146,9 @@ func (u *MessagesPerRunnerMetricWriter) writeMessagesPerRunnerMetric(ctx context
 			return fmt.Errorf("can not decide on leader: %w", err)
 		}
 
-		u.logger.Warn("will assume leader role as election failed: %s", err)
+		u.logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("will assume leader role as election failed")
 		isLeader = true
 	}
 
@@ -156,7 +158,9 @@ func (u *MessagesPerRunnerMetricWriter) writeMessagesPerRunnerMetric(ctx context
 	}
 
 	if messagesPerRunner, err = u.calculateMessagesPerRunner(ctx); err != nil {
-		u.logger.Warn("can not calculate messages per runner: %s", err)
+		u.logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("can not calculate messages per runner")
 		return nil
 	}
 

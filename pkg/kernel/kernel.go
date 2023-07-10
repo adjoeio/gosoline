@@ -174,7 +174,9 @@ func (k *kernel) runModule(ctx context.Context, name string, ms *moduleState) (m
 		}
 
 		if ms.err != nil {
-			k.logger.Error("error running %s module %s: %w", ms.config.GetType(), name, ms.err)
+			k.logger.WithFields(log.Fields{
+				"error": ms.err,
+			}).Error("error running %s module %s", ms.config.GetType(), name)
 		}
 
 		atomic.StoreInt32(&ms.isRunning, 0)

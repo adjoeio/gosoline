@@ -148,7 +148,9 @@ func (d *Daemon) append(datum *Datum) {
 		amendFromDefault(datum)
 
 		if err := datum.IsValid(); err != nil {
-			d.logger.Warn("invalid metric: %s", err.Error())
+			d.logger.WithFields(log.Fields{
+				"error": err,
+			}).Warn("invalid metric")
 			return
 		}
 

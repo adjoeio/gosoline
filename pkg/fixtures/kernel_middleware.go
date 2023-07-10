@@ -16,7 +16,9 @@ func KernelMiddlewareLoader(factory FixtureBuilderFactory) kernel.MiddlewareFact
 		return func(next kernel.MiddlewareHandler) kernel.MiddlewareHandler {
 			return func() {
 				if err := loader.Load(ctx, builder.Fixtures()); err != nil {
-					logger.Error("can not load fixtureSets: %w", err)
+					logger.WithFields(log.Fields{
+						"error": err,
+					}).Error("can not load fixtureSets")
 					return
 				}
 

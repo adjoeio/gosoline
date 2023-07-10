@@ -124,7 +124,9 @@ func (g *Server) Run(ctx context.Context) error {
 
 	err := g.server.Serve(g.listener)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		g.logger.Error("grpc_server closed unexpected: %w", err.Error())
+		g.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("grpc_server closed unexpected")
 
 		return err
 	}

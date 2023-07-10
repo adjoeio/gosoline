@@ -257,7 +257,9 @@ func (c *baseConsumer) ingestData(ctx context.Context) error {
 	cfn := coffin.New()
 	cfn.GoWithContextf(ctx, c.ingestDataFromSource(c.input, dataSourceInput, func(msg *Message) {}), "panic during shoveling data from input")
 	cfn.GoWithContextf(ctx, c.ingestDataFromSource(c.retryHandler, dataSourceRetry, func(msg *Message) {
-		c.logger.Warn("retrying message with id %s", msg.Attributes[AttributeRetryId])
+		c.logger.WithFields(log.Fields{
+			"message_id": fmt.Sprintf("%s", msg.Attributes[AttributeRetryId]),
+		}).Warn("retrying message with id")
 		c.writeMetricRetryCount(metricNameConsumerRetryGetCount)
 	}), "panic during shoveling data from retry")
 
@@ -338,7 +340,9 @@ func (c *baseConsumer) retry(ctx context.Context, msg *Message) {
 		"retry_id": retryId,
 	})
 
-	c.logger.WithContext(ctx).Warn("putting message with id %s into retry", retryId)
+	c.logger.WithContext(ctx).WithFields(log.Fields{
+		"message_id": fmt.Sprintf("%s", retryId),
+	}).Warn("putting message with id into retry")
 	c.writeMetricRetryCount(metricNameConsumerRetryPutCount)
 
 	if err := c.retryHandler.Put(ctx, retryMsg); err != nil {
@@ -368,7 +372,9 @@ func (c *baseConsumer) buildRetryMessage(msg *Message) (*Message, interface{}) {
 }
 
 func (c *baseConsumer) handleError(ctx context.Context, err error, msg string) {
-	c.logger.WithContext(ctx).Error("%s: %w", msg, err)
+	c.logger.WithContext(ctx).WithFields(log.Fields{
+		"error": err,
+	}).Error("%s", msg)
 
 	c.metricWriter.Write(metric.Data{
 		&metric.Datum{

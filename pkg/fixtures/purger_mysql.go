@@ -32,7 +32,9 @@ func newMysqlPurger(config cfg.Config, logger log.Logger, tableName string) (*my
 func (p *mysqlPurger) purgeMysql(ctx context.Context) error {
 	err := p.setForeignKeyChecks(0)
 	if err != nil {
-		p.logger.Error("error disabling foreign key checks: %w", err)
+		p.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("error disabling foreign key checks")
 
 		return err
 	}
@@ -40,14 +42,18 @@ func (p *mysqlPurger) purgeMysql(ctx context.Context) error {
 	defer func() {
 		err := p.setForeignKeyChecks(1)
 		if err != nil {
-			p.logger.Error("error enabling foreign key checks: %w", err)
+			p.logger.WithFields(log.Fields{
+				"error": err,
+			}).Error("error enabling foreign key checks")
 		}
 	}()
 
 	_, err = p.client.Exec(ctx, fmt.Sprintf(truncateTableStatement, p.tableName))
 
 	if err != nil {
-		p.logger.Error("error truncating table %s: %w", p.tableName, err)
+		p.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("error truncating table %s", p.tableName)
 		return err
 	}
 

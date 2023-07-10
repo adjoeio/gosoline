@@ -136,21 +136,27 @@ func (r *repository) Create(ctx context.Context, value ModelBased) error {
 	err := r.orm.Create(value).Error
 
 	if db.IsDuplicateEntryError(err) {
-		logger.Warn("could not create model of type %s due to duplicate entry error: %s", modelId, err.Error())
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("could not create model of type %s due to duplicate entry error", modelId)
 		return &db.DuplicateEntryError{
 			Err: err,
 		}
 	}
 
 	if err != nil {
-		logger.Error("could not create model of type %v: %w", modelId, err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not create model of type %v", modelId)
 		return err
 	}
 
 	err = r.refreshAssociations(value, Create)
 
 	if err != nil {
-		logger.Error("could not update associations of model type %v: %w", modelId, err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not update associations of model type %v", modelId)
 		return err
 	}
 
@@ -194,21 +200,27 @@ func (r *repository) Update(ctx context.Context, value ModelBased) error {
 	err := r.orm.Save(value).Error
 
 	if db.IsDuplicateEntryError(err) {
-		logger.Warn("could not update model of type %s with id %d due to duplicate entry error: %s", modelId, mdl.EmptyIfNil(value.GetId()), err.Error())
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("could not update model of type %s with id %d due to duplicate entry error", modelId, mdl.EmptyIfNil(value.GetId()))
 		return &db.DuplicateEntryError{
 			Err: err,
 		}
 	}
 
 	if err != nil {
-		logger.Error("could not update model of type %s with id %d: %w", modelId, mdl.EmptyIfNil(value.GetId()), err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not update model of type %s with id %d", modelId, mdl.EmptyIfNil(value.GetId()))
 		return err
 	}
 
 	err = r.refreshAssociations(value, Update)
 
 	if err != nil {
-		logger.Error("could not update associations of model type %s with id %d: %w", modelId, *value.GetId(), err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not update associations of model type %s with id %d", modelId, *value.GetId())
 		return err
 	}
 
@@ -230,14 +242,18 @@ func (r *repository) Delete(ctx context.Context, value ModelBased) error {
 
 	err := r.refreshAssociations(value, Delete)
 	if err != nil {
-		logger.Error("could not delete associations of model type %s with id %d: %w", modelId, *value.GetId(), err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not delete associations of model type %s with id %d", modelId, *value.GetId())
 		return err
 	}
 
 	err = r.orm.Delete(value).Error
 
 	if err != nil {
-		logger.Error("could not delete model of type %s with id %d: %w", modelId, *value.GetId(), err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not delete model of type %s with id %d", modelId, *value.GetId())
 	}
 
 	logger.Info("deleted model of type %s with id %d", modelId, *value.GetId())
