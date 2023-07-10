@@ -7,13 +7,18 @@ import (
 	"time"
 
 	"github.com/justtrackio/gosoline/pkg/clock"
+	"github.com/justtrackio/gosoline/pkg/log"
 	"github.com/segmentio/kafka-go"
 )
 
 const (
-	RetriesToOpenCircuit = 3
+	RetriesToOpenCircuit = 1
 	RetryDelay           = time.Minute
 )
+
+type Initable interface {
+	Init(logger log.Logger)
+}
 
 type PartitionCircuitBreaker struct {
 	recentFailures int64
@@ -33,6 +38,7 @@ type activePartitionBalancer struct {
 	partitionCircuitBreaker sync.Map
 	publishedPartition      sync.Map
 	settings                *PartitionCircuitBreakerSettings
+	logger                  log.Logger
 }
 
 func NewActivePartitionHashBalancer() *activePartitionBalancer {
@@ -53,6 +59,10 @@ func NewActivePartitionHashBalancerWithInterfaces(balancer kafka.Balancer, clock
 		partitionCircuitBreaker: sync.Map{},
 		settings:                settings,
 	}
+}
+
+func (b *activePartitionBalancer) Init(logger log.Logger) {
+	b.logger = logger
 }
 
 func (b *activePartitionBalancer) OnSuccess(msg kafka.Message) {
@@ -87,6 +97,7 @@ func (b *activePartitionBalancer) OnError(msg kafka.Message, _ error) {
 
 func (b *activePartitionBalancer) Balance(msg kafka.Message, partitions ...int) (partition int) {
 	defer func() { b.cachePartition(msg.Topic, string(msg.Key), partition) }()
+	defer func() { b.logger.Debug("returned partition:%d", partition) }()
 
 	// calculate balancer and check if the circuit breaker is open for the calculated partition, if so select a different one
 	partition = b.balancer.Balance(msg, partitions...)
@@ -95,14 +106,18 @@ func (b *activePartitionBalancer) Balance(msg kafka.Message, partitions ...int) 
 		return partition
 	}
 
+	b.logger.Debug("partition circuit was found for partition:%d", partition)
+
 	cb := partitionCircuit.(*PartitionCircuitBreaker)
 	if b.circuitIsClosed(cb) {
 		// circuit is closed proceed with the defaultPartition
+		b.logger.Debug("partition circuit was closed for partition:%d", partition)
 		return partition
 	}
 
 	if b.canRetry(cb) {
 		// enough time has passed so we can retry
+		b.logger.Debug("partition circuit can retry partition:%d", partition)
 		return partition
 	}
 
@@ -116,6 +131,7 @@ func (b *activePartitionBalancer) Balance(msg kafka.Message, partitions ...int) 
 	}
 
 	partition = b.Balance(msg, eligiblePartitions...)
+	b.logger.Debug("re calculated partition:%d from eligible paritions count:%d", partition, len(eligiblePartitions))
 
 	return partition
 }

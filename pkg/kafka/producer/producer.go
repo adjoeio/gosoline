@@ -47,6 +47,9 @@ func NewProducerWithInterfaces(conf *Settings, logger log.Logger, writer Writer)
 			"kafka_batch_timeout": conf.BatchTimeout,
 		},
 	)
+	if initableBalancer, ok := kafkaBalancers[conf.Balancer].(Initable); ok {
+		initableBalancer.Init(logger)
+	}
 
 	return &Producer{
 		Settings:       conf,

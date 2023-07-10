@@ -7,6 +7,7 @@ import (
 
 	"github.com/justtrackio/gosoline/pkg/clock"
 	"github.com/justtrackio/gosoline/pkg/kafka/producer"
+	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,6 +52,7 @@ func Test_activePartitionHashBalancer_Balance(t *testing.T) {
 			Delay:   time.Minute,
 		},
 	)
+	activePartitionBalancer.Init(logMocks.NewLoggerMockedAll())
 
 	partitions := []int{0, 1, 2, 4, 5}
 	msg1 := kafkaMessageWithId("1")
