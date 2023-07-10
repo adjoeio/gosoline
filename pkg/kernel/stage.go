@@ -181,7 +181,9 @@ func (s *stage) stopWait(killErr error) {
 	s.err = s.cfn.Wait()
 
 	if s.err != nil && !errors.Is(s.err, ErrKernelStopping) {
-		s.logger.Error("error during the execution of stage %d: %w", s.index, s.err)
+		s.logger.WithFields(log.Fields{
+			"error": s.err,
+		}).Error("error during the execution of stage %d", s.index)
 	}
 
 	s.terminated.Signal()

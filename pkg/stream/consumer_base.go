@@ -287,7 +287,9 @@ func (c *baseConsumer) ingestDataFromSource(input Input, src string) func(ctx co
 				}
 
 				if retryId, ok := msg.Attributes[AttributeRetryId]; ok {
-					c.logger.Warn("retrying message with id %s", retryId)
+					c.logger.WithFields(log.Fields{
+						"retry_id": fmt.Sprintf("%s", retryId),
+					}).Warn("retrying message with id")
 					c.writeMetricRetryCount(metricNameConsumerRetryGetCount)
 				}
 
@@ -348,7 +350,7 @@ func (c *baseConsumer) retry(ctx context.Context, msg *Message) {
 		"retry_id": retryId,
 	})
 
-	c.logger.WithContext(ctx).Warn("putting message with id %s into retry", retryId)
+	c.logger.WithContext(ctx).Warn("putting message with id into retry")
 	c.writeMetricRetryCount(metricNameConsumerRetryPutCount)
 
 	ctx, stop := exec.WithDelayedCancelContext(ctx, c.settings.Retry.GraceTime)
@@ -383,7 +385,9 @@ func (c *baseConsumer) buildRetryMessage(msg *Message) (retryMsg *Message, retry
 }
 
 func (c *baseConsumer) handleError(ctx context.Context, err error, msg string) {
-	c.logger.WithContext(ctx).Error("%s: %w", msg, err)
+	c.logger.WithContext(ctx).WithFields(log.Fields{
+		"error": err,
+	}).Error("%s", msg)
 
 	c.metricWriter.Write(metric.Data{
 		&metric.Datum{

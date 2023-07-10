@@ -66,7 +66,9 @@ func NewMysqlPlainFixtureWriterWithInterfaces(logger log.Logger, client db.Clien
 func (m *mysqlPlainFixtureWriter) Purge(ctx context.Context) error {
 	err := m.purger.Purge(ctx)
 	if err != nil {
-		m.logger.Error("error occurred during purging of table %s in plain mysql fixture loader: %w", m.metadata.TableName, err)
+		m.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("error occurred during purging of table %s in plain mysql fixture loader", m.metadata.TableName)
 
 		return fmt.Errorf("failed to purge mysql table %s: %w", m.metadata.TableName, err)
 	}
