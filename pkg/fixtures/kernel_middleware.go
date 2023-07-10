@@ -32,7 +32,9 @@ func KernelMiddlewareLoader(group string, factory FixtureSetsFactory) kernel.Mid
 		return func(next kernel.MiddlewareHandler) kernel.MiddlewareHandler {
 			return func() {
 				if err = loader.Load(ctx, group, fixtureSets); err != nil {
-					logger.Error("can not load fixture sets: %w", err)
+					logger.WithFields(log.Fields{
+						"error": err,
+					}).Error("can not load fixtureSets")
 
 					return
 				}

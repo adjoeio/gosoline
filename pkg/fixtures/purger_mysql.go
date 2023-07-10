@@ -40,7 +40,9 @@ func (p *mysqlPurger) Purge(ctx context.Context) error {
 		db.SqlFmt(foreignKeyChecksStatement, nil, 1),
 	}...)
 	if err != nil {
-		p.logger.Error("error truncating table %s: %w", p.tableName, err)
+		p.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("error truncating table %s", p.tableName)
 		return err
 	}
 

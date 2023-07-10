@@ -54,7 +54,9 @@ func (e *BackoffExecutor) Execute(ctx context.Context, f Executable, notifier ..
 			n(err, dur)
 		}
 
-		logger.Warn("retrying resource %s after error: %s", e.resource, err.Error())
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("retrying resource %s after error", e.resource)
 		attempts++
 	}
 
@@ -89,21 +91,27 @@ func (e *BackoffExecutor) Execute(ctx context.Context, f Executable, notifier ..
 
 	// we're having an error after reaching the MaxAttempts and the error isn't good-natured
 	if err != nil && errType != ErrorTypeOk && e.settings.MaxAttempts > 0 && attempts > e.settings.MaxAttempts {
-		logger.Warn("crossed max attempts with an error on requesting resource %s after %d attempts in %s: %s", e.resource, attempts, duration, err.Error())
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("crossed max attempts with an error on requesting resource %s after %d attempts in %s", e.resource, attempts, duration)
 
 		return res, NewErrAttemptsExceeded(e.resource, attempts, duration, err)
 	}
 
 	// we're having an error after reaching the MaxElapsedTime and the error isn't good-natured
 	if err != nil && errType != ErrorTypeOk && e.settings.MaxElapsedTime > 0 && duration > e.settings.MaxElapsedTime {
-		logger.Warn("crossed max elapsed time with an error on requesting resource %s after %d attempts in %s: %s", e.resource, attempts, duration, err.Error())
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("crossed max elapsed time with an error on requesting resource %s after %d attempts in %s", e.resource, attempts, duration)
 
 		return res, NewErrMaxElapsedTimeExceeded(e.resource, attempts, duration, e.settings.MaxElapsedTime, err)
 	}
 
 	// we're still having an error and the error isn't good-natured
 	if err != nil && errType != ErrorTypeOk {
-		logger.Warn("error on requesting resource %s after %d attempts in %s: %s", e.resource, attempts, duration, err.Error())
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("error on requesting resource %s after %d attempts in %s", e.resource, attempts, duration)
 
 		return res, err
 	}
