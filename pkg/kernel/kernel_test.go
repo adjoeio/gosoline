@@ -7,6 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+	"golang.org/x/sys/unix"
+
 	"github.com/justtrackio/gosoline/pkg/appctx"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	cfgMocks "github.com/justtrackio/gosoline/pkg/cfg/mocks"
@@ -17,11 +23,6 @@ import (
 	"github.com/justtrackio/gosoline/pkg/log"
 	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
 	"github.com/justtrackio/gosoline/pkg/test/matcher"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
-	"golang.org/x/sys/unix"
 )
 
 type FunctionModule func(ctx context.Context) error
@@ -172,8 +173,9 @@ func (s *KernelTestSuite) TestRunSuccess() {
 
 func (s *KernelTestSuite) TestRunFailure() {
 	s.expectStartupLogs()
-	s.logger.EXPECT().Error("error during the execution of stage %d: %w", kernel.StageApplication, mock.Anything).Once()
-	s.logger.EXPECT().Error("error running %s module %s: %w", "foreground", "module", mock.Anything).Once()
+	s.logger.EXPECT().WithFields(mock.Anything).Return(s.logger)
+	s.logger.EXPECT().Error("error during the execution of stage %d", kernel.StageApplication).Once()
+	s.logger.EXPECT().Error("error running %s module %s", "foreground", "module").Once()
 
 	s.expectModuleLifecycle(s.module, false, kernel.StageApplication)
 	s.module.EXPECT().Run(matcher.Context).Run(func(ctx context.Context) {

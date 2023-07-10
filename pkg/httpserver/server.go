@@ -185,7 +185,9 @@ func (s *HttpServer) Run(ctx context.Context) error {
 	err := s.server.Serve(s.listener)
 
 	if !errors.Is(err, http.ErrServerClosed) {
-		s.logger.Error("server closed unexpected: %w", err)
+		s.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("server closed unexpected")
 
 		return err
 	}

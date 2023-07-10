@@ -114,7 +114,7 @@ func (s *producerDaemonPartitionedAggregatorTestSuite) TestAggregateMixedMessage
 }
 
 func (s *producerDaemonPartitionedAggregatorTestSuite) TestGettingExplicitHashKeyFails() {
-	s.logger.EXPECT().Error("failed to determine partition or explicit hash key, will choose one at random: %w", fmt.Errorf("invalid explicit hash key: not a number")).Once()
+	s.logger.EXPECT().Error("failed to determine partition or explicit hash key, will choose one at random").Once()
 	s.rand.EXPECT().Intn(4).Return(3).Once()
 	s.aggregators[3].EXPECT().Write(s.ctx, &stream.Message{
 		Attributes: map[string]string{

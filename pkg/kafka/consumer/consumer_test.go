@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/justtrackio/gosoline/pkg/kafka/consumer"
 	"github.com/justtrackio/gosoline/pkg/kafka/consumer/mocks"
 	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
 	"github.com/justtrackio/gosoline/pkg/test/matcher"
-	"github.com/segmentio/kafka-go"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestConsumer_Manager_Batch_Commit(t *testing.T) {
@@ -69,7 +70,6 @@ func TestConsumer_Manager_Batch_Graceful_Exit(t *testing.T) {
 		manager    = &mocks.OffsetManager{}
 		managerErr = errors.New("manager: failed")
 	)
-
 
 	manager.EXPECT().Start(matcher.Context).RunAndReturn(func(ctx context.Context) error {
 		select {

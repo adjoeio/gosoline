@@ -120,7 +120,9 @@ func (s *metricsServer) Run(ctx context.Context) error {
 	go func() {
 		err = s.server.Serve(s.listener)
 		if !errors.Is(err, http.ErrServerClosed) {
-			s.logger.Error("Server closed unexpected: %w", err)
+			s.logger.WithFields(log.Fields{
+				"error": err,
+			}).Error("Server closed unexpected")
 
 			return
 		}
@@ -131,7 +133,9 @@ func (s *metricsServer) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			err = s.server.Close()
 			if err != nil {
-				s.logger.Error("Server Close: %w", err)
+				s.logger.WithFields(log.Fields{
+					"error": err,
+				}).Error("Server Close:")
 			}
 
 			s.logger.Info("leaving metrics server")
