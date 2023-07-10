@@ -440,7 +440,10 @@ func (r *containerRunner) Stop() error {
 	for name, cb := range r.shutdownCallbacks {
 		err := cb()
 		if err != nil {
-			r.logger.Error("shutdown callback failed for container %s: %w", name, err)
+			r.logger.WithFields(log.Fields{
+				"error": err,
+				"name":  name,
+			}).Error("shutdown callback failed for container")
 		}
 	}
 

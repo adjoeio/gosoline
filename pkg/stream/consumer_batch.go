@@ -124,7 +124,9 @@ func (c *BatchConsumer) processAggregateMessage(ctx context.Context, cdata *cons
 	ctx, _, err = c.encoder.Decode(ctx, cdata.msg, &batch)
 
 	if err != nil {
-		c.logger.WithContext(ctx).Error("an error occurred during disaggregation of the message: %w", err)
+		c.logger.WithContext(ctx).WithFields(log.Fields{
+			"error": err,
+		}).Error("an error occurred during disaggregation of the message")
 		return
 	}
 
@@ -178,7 +180,9 @@ func (c *BatchConsumer) consumeBatch(ctx context.Context, batch []*consumerData)
 
 	acks, err := c.callback.Consume(batchCtx, models, attributes)
 	if err != nil {
-		logger.Error("an error occurred during the consume batch operation: %w", err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("an error occurred during the consume batch operation")
 	}
 
 	if len(batch) != len(acks) {
@@ -212,7 +216,9 @@ func (c *BatchConsumer) decodeMessages(batchCtx context.Context, batch []*consum
 
 		msgCtx, attribute, err := c.encoder.Decode(batchCtx, cdata.msg, model)
 		if err != nil {
-			c.logger.WithContext(msgCtx).Error("an error occurred during the batch decode message operation: %w", err)
+			c.logger.WithContext(msgCtx).WithFields(log.Fields{
+				"error": err,
+			}).Error("an error occurred during the batch decode message operation")
 			continue
 		}
 

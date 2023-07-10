@@ -73,7 +73,9 @@ func (r *notifyingRepository) doCallback(ctx context.Context, callbackType strin
 		err := c.Send(ctx, callbackType, value)
 		if err != nil {
 			errors = multierror.Append(errors, err)
-			logger.Warn("%T notifier errored out with: %v", c, err)
+			logger.WithFields(log.Fields{
+				"error": err,
+			}).Warn("%T notifier errored out", c)
 		}
 	}
 

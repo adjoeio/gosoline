@@ -39,7 +39,9 @@ func (r Repository) Create(ctx context.Context, value db_repo.ModelBased) error 
 
 	for _, err := range errs {
 		if err != nil {
-			r.logger.Error("error on %s for event %s: %w", db_repo.Create, eventName, err)
+			r.logger.WithFields(log.Fields{
+				"error": err,
+			}).Error("error on %s for event %s", db_repo.Create, eventName)
 		}
 	}
 
@@ -57,7 +59,9 @@ func (r Repository) Update(ctx context.Context, value db_repo.ModelBased) error 
 
 	for _, err := range errs {
 		if err != nil {
-			r.logger.Error("error on %s for event %s: %w", db_repo.Update, eventName, err)
+			r.logger.WithFields(log.Fields{
+				"error": err,
+			}).Error("error on %s for event %s", db_repo.Update, eventName)
 		}
 	}
 
@@ -75,7 +79,9 @@ func (r Repository) Delete(ctx context.Context, value db_repo.ModelBased) error 
 
 	for _, err := range errs {
 		if err != nil {
-			r.logger.Error("error on %s for event %s: %w", db_repo.Delete, eventName, err)
+			r.logger.WithFields(log.Fields{
+				"error": err,
+			}).Error("error on %s for event %s", db_repo.Delete, eventName)
 		}
 	}
 

@@ -46,7 +46,9 @@ func (s shareCreateHandler) Handle(ctx context.Context, req *apiserver.Request) 
 	entity, err := s.getEntity(ctx, id)
 	var notFound db_repo.RecordNotFoundError
 	if errors.As(err, &notFound) {
-		logger.Warn("failed to read entity: %s", err.Error())
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("failed to read entity")
 
 		return apiserver.NewStatusResponse(http.StatusNotFound), nil
 	}

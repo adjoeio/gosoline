@@ -281,7 +281,9 @@ func (d *producerDaemon) tickerLoop(ctx context.Context) error {
 			d.lck.Lock()
 
 			if err = d.flushAll(); err != nil {
-				d.logger.Error("can not flush all messages: %w", err)
+				d.logger.WithFields(log.Fields{
+					"error": err,
+				}).Error("can not flush all messages")
 			}
 
 			d.lck.Unlock()
@@ -409,7 +411,7 @@ func (d *producerDaemon) outputLoop() error {
 		}
 
 		if err := d.output.Write(ctx, batch); err != nil {
-			d.logger.Error("can not write messages to output in producer %s: %w", d.name, err)
+			d.logger.Error("can not write messages to output in producer %s", d.name)
 		}
 
 		d.writeMetricBatchSize(len(batch))

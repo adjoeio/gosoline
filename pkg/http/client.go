@@ -220,7 +220,9 @@ func (c *client) do(ctx context.Context, method string, request *Request) (*Resp
 	})
 
 	if err != nil {
-		logger.Error("failed to assemble request: %w", err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to assemble request")
 		return nil, fmt.Errorf("failed to assemble request: %w", err)
 	}
 

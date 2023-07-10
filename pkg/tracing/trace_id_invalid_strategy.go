@@ -40,7 +40,8 @@ func (t TraceIdErrorWarningStrategy) TraceIdInvalid(err error) error {
 
 	t.logger.WithFields(log.Fields{
 		"stacktrace": stacktrace,
-	}).Warn("trace id is invalid: %s", err.Error())
+		"error":      err,
+	}).Warn("trace id is invalid")
 
 	return nil
 }

@@ -51,7 +51,9 @@ func newStage(ctx context.Context) *stage {
 
 func (s *stage) run(k *kernel) {
 	if err := s.modules.lck.Poison(); err != nil {
-		k.logger.Error("stage was already run: %w", err)
+		k.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("stage was already run")
 		return
 	}
 
@@ -83,7 +85,9 @@ func (s *stage) stopWait(stageIndex int, logger log.Logger) {
 	s.err = s.cfn.Wait()
 
 	if s.err != nil && s.err != ErrKernelStopping {
-		logger.Error("error during the execution of stage %d: %w", stageIndex, s.err)
+		logger.WithFields(log.Fields{
+			"error": s.err,
+		}).Error("error during the execution of stage %d", stageIndex)
 	}
 
 	s.terminated.Signal()

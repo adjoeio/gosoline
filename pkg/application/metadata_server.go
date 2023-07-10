@@ -90,13 +90,17 @@ func (s *MetadataServer) handleMetadata(metadata *appctx.Metadata) func(http.Res
 		data := metadata.Msi()
 
 		if bytes, err = json.Marshal(data); err != nil {
-			s.logger.Warn("can not marshal metadata %s", err.Error())
+			s.logger.WithFields(log.Fields{
+				"error": err,
+			}).Warn("can not marshal metadata")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		if _, err = writer.Write(bytes); err != nil {
-			s.logger.Warn("can not write config %s", err.Error())
+			s.logger.WithFields(log.Fields{
+				"error": err,
+			}).Warn("can not write config")
 		}
 	}
 }
@@ -132,13 +136,17 @@ func (s *MetadataServer) formattedResponse(writer http.ResponseWriter, request *
 	}
 
 	if bytes, err = marshaller(response); err != nil {
-		s.logger.Warn("can not marshal response %s", err.Error())
+		s.logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("can not marshal response")
 		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if _, err = writer.Write(bytes); err != nil {
-		s.logger.Warn("can not write response %s", err.Error())
+		s.logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("can not write response")
 	}
 }
 
@@ -146,6 +154,8 @@ func (s *MetadataServer) waitForStop(ctx context.Context) {
 	<-ctx.Done()
 	err := s.server.Close()
 	if err != nil {
-		s.logger.Error("could not close config server: %w", err)
+		s.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not close config server")
 	}
 }

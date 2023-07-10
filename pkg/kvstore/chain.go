@@ -83,7 +83,9 @@ func (s *chainKvStore[T]) Get(ctx context.Context, key any, value *T) (bool, err
 	// check if we can short circuit the whole deal
 	exists, err := s.missingCache.Contains(ctx, key)
 	if err != nil {
-		s.logger.WithContext(ctx).Warn("failed to read from missing value cache: %s", err.Error())
+		s.logger.WithContext(ctx).WithFields(log.Fields{
+			"error": err,
+		}).Warn("failed to read from missing value cache")
 	}
 
 	if exists {
@@ -103,7 +105,9 @@ func (s *chainKvStore[T]) Get(ctx context.Context, key any, value *T) (bool, err
 				return false, fmt.Errorf("could not get %s from kvstore %T: %w", key, element, err)
 			}
 
-			s.logger.WithContext(ctx).Warn("could not get %s from kvstore %T: %s", key, element, err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not get %s from kvstore %T", key, element)
 		}
 
 		if exists {
@@ -116,7 +120,9 @@ func (s *chainKvStore[T]) Get(ctx context.Context, key any, value *T) (bool, err
 	// Cache empty value if no result was found
 	if !exists {
 		if err := s.missingCache.Put(ctx, key, *new(T)); err != nil {
-			s.logger.WithContext(ctx).Warn("failed to write to missing value cache: %s", err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("failed to write to missing value cache")
 		}
 
 		return false, nil
@@ -126,7 +132,9 @@ func (s *chainKvStore[T]) Get(ctx context.Context, key any, value *T) (bool, err
 	for i := foundInIndex - 1; i >= 0; i-- {
 		err := s.chain[i].Put(ctx, key, *value)
 		if err != nil {
-			s.logger.WithContext(ctx).Warn("could not put %s to kvstore %T: %s", key, s.chain[i], err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not put %s to kvstore %T", key, s.chain[i])
 		}
 	}
 
@@ -145,7 +153,9 @@ func (s *chainKvStore[T]) GetBatch(ctx context.Context, keys any, values any) ([
 	todo, err = s.missingCache.GetBatch(ctx, todo, cachedMissingMap)
 
 	if err != nil {
-		s.logger.WithContext(ctx).Warn("failed to read from missing value cache: %s", err.Error())
+		s.logger.WithContext(ctx).WithFields(log.Fields{
+			"error": err,
+		}).Warn("failed to read from missing value cache")
 	}
 
 	for k := range cachedMissingMap {
@@ -170,7 +180,9 @@ func (s *chainKvStore[T]) GetBatch(ctx context.Context, keys any, values any) ([
 				return nil, fmt.Errorf("could not get batch from kvstore %T: %w", element, err)
 			}
 
-			s.logger.WithContext(ctx).Warn("could not get batch from kvstore %T: %s", element, err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not get batch from kvstore %T", element)
 			refill[i] = todo
 		}
 
@@ -209,7 +221,9 @@ func (s *chainKvStore[T]) GetBatch(ctx context.Context, keys any, values any) ([
 		err = s.chain[i].PutBatch(ctx, missingInElement)
 
 		if err != nil {
-			s.logger.WithContext(ctx).Warn("could not put batch to kvstore %T: %s", s.chain[i], err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not put batch to kvstore %T", s.chain[i])
 		}
 	}
 
@@ -224,7 +238,9 @@ func (s *chainKvStore[T]) GetBatch(ctx context.Context, keys any, values any) ([
 		err = s.missingCache.PutBatch(ctx, missingValues)
 
 		if err != nil {
-			s.logger.WithContext(ctx).Warn("could not put batch to empty value cache: %w", err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not put batch to empty value cache")
 		}
 	}
 
@@ -246,7 +262,9 @@ func (s *chainKvStore[T]) Put(ctx context.Context, key any, value T) error {
 				return fmt.Errorf("could not put %s to kvstore %T: %w", key, s.chain[i], err)
 			}
 
-			s.logger.WithContext(ctx).Warn("could not put %s to kvstore %T: %s", key, s.chain[i], err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not put %s to kvstore %T", key, s.chain[i])
 		}
 	}
 
@@ -254,7 +272,9 @@ func (s *chainKvStore[T]) Put(ctx context.Context, key any, value T) error {
 	// otherwise, we might remove it, some other thread adds it again and then we insert
 	// it into the backing stores
 	if err := s.missingCache.Delete(ctx, key); err != nil {
-		s.logger.WithContext(ctx).Warn("could not erase cached empty value for key %s: %s", key, err.Error())
+		s.logger.WithContext(ctx).WithFields(log.Fields{
+			"error": err,
+		}).Warn("could not erase cached empty value for key %s", key)
 	}
 
 	return nil
@@ -276,13 +296,17 @@ func (s *chainKvStore[T]) PutBatch(ctx context.Context, values any) error {
 				return fmt.Errorf("could not put batch to kvstore %T: %w", s.chain[i], err)
 			}
 
-			s.logger.WithContext(ctx).Warn("could not put batch to kvstore %T: %s", s.chain[i], err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not put batch to kvstore %T", s.chain[i])
 		}
 	}
 
 	for key := range mii {
 		if err := s.missingCache.Delete(ctx, key); err != nil {
-			s.logger.WithContext(ctx).Warn("could not erase cached empty value for key %T %v: %s", key, key, err.Error())
+			s.logger.WithContext(ctx).WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not erase cached empty value for key %T %v", key, key)
 		}
 	}
 

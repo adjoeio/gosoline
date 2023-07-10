@@ -133,14 +133,18 @@ func (i *sqsInput) runLoop(ctx context.Context) error {
 
 		sqsMessages, err := i.queue.Receive(ctx, i.settings.MaxNumberOfMessages, i.settings.WaitTime)
 		if err != nil {
-			i.logger.Error("could not get messages from sqs: %w", err)
+			i.logger.WithFields(log.Fields{
+				"error": err,
+			}).Error("could not get messages from sqs")
 			continue
 		}
 
 		for _, sqsMessage := range sqsMessages {
 			msg, err := i.unmarshaler(sqsMessage.Body)
 			if err != nil {
-				i.logger.Error("could not unmarshal message: %w", err)
+				i.logger.WithFields(log.Fields{
+					"error": err,
+				}).Error("could not unmarshal message")
 				continue
 			}
 

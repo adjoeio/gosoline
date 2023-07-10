@@ -44,7 +44,9 @@ func (uh updateHandler) Handle(ctx context.Context, request *apiserver.Request) 
 
 	var notFound db_repo.RecordNotFoundError
 	if errors.As(err, &notFound) {
-		uh.logger.WithContext(ctx).Warn("failed to update model: %s", err.Error())
+		uh.logger.WithContext(ctx).WithFields(log.Fields{
+			"error": err,
+		}).Warn("failed to update model")
 
 		return apiserver.NewStatusResponse(http.StatusNotFound), nil
 	}
