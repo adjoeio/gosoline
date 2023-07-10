@@ -107,7 +107,9 @@ func (w *cloudwatchWriter) Write(batch Data) {
 	})
 
 	if err != nil {
-		logger.Info("could not build metric data: %w", err)
+		logger.WithFields(log.Fields{
+			"error": err,
+		}).Warn("could not build metric data")
 
 		return
 	}
@@ -125,8 +127,9 @@ func (w *cloudwatchWriter) Write(batch Data) {
 		}
 
 		if _, err = w.client.PutMetricData(context.Background(), &input); err != nil {
-			logger.Info("could not write metric data: %s", err)
-
+			logger.WithFields(log.Fields{
+				"error": err,
+			}).Warn("could not write metric data")
 			continue
 		}
 	}
@@ -167,8 +170,9 @@ func (w *cloudwatchWriter) buildMetricData(batch Data) ([]types.MetricDatum, err
 		}
 
 		if err != nil {
-			w.logger.Error("invalid metric dimension: %w", err)
-
+			w.logger.WithFields(log.Fields{
+				"error": err,
+			}).Error("invalid metric dimension")
 			continue
 		}
 
