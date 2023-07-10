@@ -179,7 +179,7 @@ func (s *KernelTestSuite) TestRunSuccess() {
 }
 
 func (s *KernelTestSuite) TestRunFailure() {
-	s.logger.On("Error", "error during the execution of stage %d: %w", kernel.StageApplication, mock.Anything)
+	s.logger.EXPECT().Error("error during the execution of stage %d", kernel.StageApplication, mock.Anything).Once()
 
 	s.module.On("GetStage").Return(kernel.StageApplication)
 	s.module.On("Run", mock.Anything).Run(func(args mock.Arguments) {

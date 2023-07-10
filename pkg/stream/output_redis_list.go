@@ -63,7 +63,9 @@ func (o *redisListOutput) WriteOne(ctx context.Context, record WritableMessage) 
 func (o *redisListOutput) Write(ctx context.Context, batch []WritableMessage) error {
 	chunks, err := BuildChunks(batch, o.settings.BatchSize)
 	if err != nil {
-		o.logger.Error("could not batch all messages: %w", err)
+		o.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not batch all messages")
 	}
 
 	for _, chunk := range chunks {

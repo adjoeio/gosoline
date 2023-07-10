@@ -178,7 +178,9 @@ func (d *Daemon) append(datum *Datum) {
 
 		if err := datum.IsValid(); err != nil {
 			if d.throttleWarning(err.Error()) {
-				d.logger.Warn("invalid metric: %s", err.Error())
+				d.logger.WithFields(log.Fields{
+						"error": err,
+					}).Warn("invalid metric")
 			}
 
 			return

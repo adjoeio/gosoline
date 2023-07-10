@@ -20,7 +20,9 @@ func KernelMiddlewareChangeHistory(ctx context.Context, config cfg.Config, logge
 	return func(next kernel.MiddlewareHandler) kernel.MiddlewareHandler {
 		return func() {
 			if err = manager.RunMigrations(); err != nil {
-				logger.Error("can not run change history migrations: %w", err)
+				logger.WithFields(log.Fields{
+					"error": err,
+				}).Error("can not run change history migrations")
 				return
 			}
 

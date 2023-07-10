@@ -69,7 +69,9 @@ func (w elasticsearchWriter) bulkWriteToES(buf bytes.Buffer) {
 
 	res, err := w.client.Bulk(batchReader)
 	if err != nil {
-		w.logger.Error("could not write metric data to es: %w", err)
+		w.logger.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not write metric data to es")
 		return
 	}
 
@@ -77,7 +79,8 @@ func (w elasticsearchWriter) bulkWriteToES(buf bytes.Buffer) {
 		// A successful response might still contain errors for particular documents
 		w.logger.WithFields(log.Fields{
 			"status_code": res.StatusCode,
-		}).Error("not all metrics have been written to es: %w", err)
+			"error":       err,
+		}).Error("not all metrics have been written to es")
 	}
 }
 
@@ -100,7 +103,9 @@ func (w elasticsearchWriter) Write(batch Data) {
 
 		data, err := json.Marshal(m)
 		if err != nil {
-			w.logger.Error("could not marshal metric data and write to es: %w", err)
+			w.logger.WithFields(log.Fields{
+				"error": err,
+			}).Error("could not marshal metric data and write to es")
 			continue
 		}
 
