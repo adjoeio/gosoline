@@ -79,9 +79,6 @@ func (p *Producer) Write(ctx context.Context, ms ...kafka.Message) error {
 }
 
 func (p *Producer) write(ctx context.Context, ms ...kafka.Message) error {
-	ctx, cancel := context.WithTimeout(ctx, DefaultWriterWriteTimeout)
-	defer cancel()
-
 	p.Logger.Debug("producing messages")
 
 	// Prepare batch.
