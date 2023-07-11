@@ -35,7 +35,7 @@ type PartitionCircuitBreakerSettings struct {
 type activePartitionBalancer struct {
 	balancer                kafka.Balancer
 	clock                   clock.Clock
-	partitionCircuitBreaker sync.Map
+	partitionCircuitBreaker *topicPartitionCircuitBreakerStore
 	publishedPartition      sync.Map
 	settings                *PartitionCircuitBreakerSettings
 	logger                  log.Logger
@@ -56,7 +56,8 @@ func NewActivePartitionHashBalancerWithInterfaces(balancer kafka.Balancer, clock
 	return &activePartitionBalancer{
 		balancer:                balancer,
 		clock:                   clock,
-		partitionCircuitBreaker: sync.Map{},
+		partitionCircuitBreaker: NewTopicPartitionCircuitBreakerStore(settings.Retries),
+		publishedPartition:      sync.Map{},
 		settings:                settings,
 	}
 }
@@ -72,7 +73,7 @@ func (b *activePartitionBalancer) OnSuccess(msg kafka.Message) {
 	}
 
 	// close the circuit if it was open
-	b.partitionCircuitBreaker.Delete(circuitBreakerKey(msg.Topic, publishedPartition))
+	b.partitionCircuitBreaker.Delete(msg.Topic, publishedPartition)
 }
 
 func (b *activePartitionBalancer) OnError(msg kafka.Message, _ error) {
@@ -81,57 +82,48 @@ func (b *activePartitionBalancer) OnError(msg kafka.Message, _ error) {
 		return
 	}
 	// TODO: figure out if some of the errors should not affect the count
-	partitionCircuit, ok := b.partitionCircuitBreaker.Load(circuitBreakerKey(msg.Topic, attemptedPartition))
+	cb, ok := b.partitionCircuitBreaker.Load(msg.Topic, attemptedPartition)
 	if !ok {
-		b.partitionCircuitBreaker.Store(circuitBreakerKey(msg.Topic, attemptedPartition), &PartitionCircuitBreaker{
+		b.partitionCircuitBreaker.Store(msg.Topic, attemptedPartition, &PartitionCircuitBreaker{
 			recentFailures: 1,
 			nextRetryAt:    b.clock.Now().Add(b.settings.Delay).UnixMilli(),
 		})
 		return
 	}
 
-	cb := partitionCircuit.(*PartitionCircuitBreaker)
 	atomic.AddInt64(&cb.recentFailures, 1)
 	atomic.StoreInt64(&cb.nextRetryAt, b.clock.Now().Add(b.settings.Delay).UnixMilli())
 }
 
 func (b *activePartitionBalancer) Balance(msg kafka.Message, partitions ...int) (partition int) {
 	defer func() { b.cachePartition(msg.Topic, string(msg.Key), partition) }()
-	defer func() { b.logger.Debug("returned partition:%d", partition) }()
+	defer func() { b.logger.Info("returned partition:%d", partition) }()
 
 	// calculate balancer and check if the circuit breaker is open for the calculated partition, if so select a different one
 	partition = b.balancer.Balance(msg, partitions...)
-	partitionCircuit, ok := b.partitionCircuitBreaker.Load(circuitBreakerKey(msg.Topic, partition))
+	cb, ok := b.partitionCircuitBreaker.Load(msg.Topic, partition)
 	if !ok {
 		return partition
 	}
 
-	b.logger.Debug("partition circuit was found for partition:%d", partition)
+	b.logger.Info("partition circuit was found for partition:%d", partition)
 
-	cb := partitionCircuit.(*PartitionCircuitBreaker)
 	if b.circuitIsClosed(cb) {
 		// circuit is closed proceed with the defaultPartition
-		b.logger.Debug("partition circuit was closed for partition:%d", partition)
+		b.logger.Info("partition circuit was closed for partition:%d", partition)
 		return partition
 	}
 
 	if b.canRetry(cb) {
 		// enough time has passed so we can retry
-		b.logger.Debug("partition circuit can retry partition:%d", partition)
+		b.logger.Info("partition circuit can retry partition:%d", partition)
 		return partition
 	}
 
-	// re-balance without the current partition
-	var eligiblePartitions = make([]int, 0, len(partitions)-1)
-	for _, other := range partitions {
-		if other == partition {
-			continue
-		}
-		eligiblePartitions = append(eligiblePartitions, other)
-	}
+	eligiblePartitions := b.partitionCircuitBreaker.GetActivePartitions(msg.Topic, partitions)
 
 	partition = b.Balance(msg, eligiblePartitions...)
-	b.logger.Debug("re calculated partition:%d from eligible paritions count:%d", partition, len(eligiblePartitions))
+	b.logger.Info("re calculated partition:%d from eligible partitions count:%d", partition, len(eligiblePartitions))
 
 	return partition
 }
@@ -161,8 +153,4 @@ func (b *activePartitionBalancer) loadAndDeleteCachedPartition(topic string, key
 	}
 
 	return val.(int), true
-}
-
-func circuitBreakerKey(topic string, partition int) string {
-	return fmt.Sprintf("%s[%d]", topic, partition)
 }
