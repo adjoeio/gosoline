@@ -35,14 +35,15 @@ type Server struct {
 }
 
 type Middleware grpc.UnaryServerInterceptor
-type MiddlewareFactory func(logger log.Logger) Middleware
+type MiddlewareFactory func(config cfg.Config, logger log.Logger) Middleware
 
 // New returns a kernel.ModuleFactory for the Server kernel.Module.
 func New(name string, definer ServiceDefiner, middlewares ...MiddlewareFactory) kernel.ModuleFactory {
 	return func(ctx context.Context, config cfg.Config, logger log.Logger) (kernel.Module, error) {
 		var (
-			err         error
-			definitions *Definitions
+			err          error
+			definitions  *Definitions
+			interceptors []grpc.UnaryServerInterceptor
 		)
 		settings := &Settings{}
 		config.UnmarshalKey(fmt.Sprintf("%s.%s", grpcServerConfigKey, name), settings)
@@ -55,23 +56,22 @@ func New(name string, definer ServiceDefiner, middlewares ...MiddlewareFactory) 
 			return nil, fmt.Errorf("could not define routes: %w", err)
 		}
 
-		return NewWithInterfaces(ctx, logger, definitions, settings, middlewares...)
+		for _, m := range middlewares {
+			interceptors = append(interceptors,
+				grpc.UnaryServerInterceptor(m(config, logger)))
+		}
+
+		return NewWithInterfaces(ctx, logger, definitions, settings, interceptors...)
 	}
 }
 
 // NewWithInterfaces receives the interfaces required to create a Server.
-func NewWithInterfaces(ctx context.Context, logger log.Logger, definitions *Definitions, s *Settings, middlewares ...MiddlewareFactory) (*Server, error) {
+func NewWithInterfaces(ctx context.Context, logger log.Logger, definitions *Definitions, s *Settings, interceptors ...grpc.UnaryServerInterceptor) (*Server, error) {
 	var (
 		hs         *healthServer
 		cancelFunc context.CancelFunc
 		serverCtx  = ctx
 	)
-
-	interceptors := []grpc.UnaryServerInterceptor{}
-	for _, m := range middlewares {
-		interceptors = append(interceptors,
-			grpc.UnaryServerInterceptor(m(logger)))
-	}
 
 	options := []grpc.ServerOption{
 		grpc.UnaryInterceptor(
