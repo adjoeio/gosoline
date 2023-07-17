@@ -107,7 +107,7 @@ func (s *ClientTestSuite) TestHttpTimeout() {
 	loggerMock := logMocks.NewLogger(s.T())
 	loggerMock.EXPECT().WithContext(matcher.Context).Return(loggerMock)
 	loggerMock.EXPECT().WithFields(mock.AnythingOfType("log.Fields")).Return(loggerMock)
-	loggerMock.EXPECT().Warn("attempt number %d to request resource %s failed after %s cause of error: %s", mock.AnythingOfType("int"), resource, mock.AnythingOfType("time.Duration"), mock.AnythingOfType("*http.ResponseError")).Twice()
+	loggerMock.EXPECT().Warn("attempt to request resource failed after cause of error").Twice()
 	loggerMock.EXPECT().Warn("sent request to resource %s successful after %d attempts in %s", resource, 3, mock.AnythingOfType("time.Duration")).Once()
 	loggerMock.EXPECT().Info("created new %s client %s", "dynamodb", "http_timeout").Once()
 
