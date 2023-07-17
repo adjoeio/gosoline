@@ -37,7 +37,7 @@ type Server struct {
 
 type (
 	Middleware        grpc.UnaryServerInterceptor
-	MiddlewareFactory func(logger log.Logger) Middleware
+	MiddlewareFactory func(config cfg.Config, logger log.Logger) Middleware
 )
 
 // New returns a kernel.ModuleFactory for the Server kernel.Module.
@@ -62,7 +62,7 @@ func New(name string, definer ServiceDefiner, middlewares ...MiddlewareFactory) 
 		interceptors := []grpc.UnaryServerInterceptor{}
 		for _, m := range middlewares {
 			interceptors = append(interceptors,
-				grpc.UnaryServerInterceptor(m(logger)))
+				grpc.UnaryServerInterceptor(m(config, logger)))
 		}
 
 		if tracingInstrumentor, err = tracing.ProvideInstrumentor(ctx, config, logger); err != nil {
