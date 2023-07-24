@@ -21,9 +21,6 @@ const (
 	// DefaultWriterReadTimeout is how much to wait for reads.
 	DefaultWriterReadTimeout = 30 * time.Second
 
-	// DefaultMaxRetryAttempts is how many times to retry a failed operation.
-	DefaultMaxRetryAttempts = 3
-
 	// DefaultMetadataTTL is the frequency of metadata refreshes.
 	DefaultMetadataTTL = 5 * time.Second
 
@@ -55,7 +52,9 @@ func NewWriter(
 
 		// Use a safe default for durability.
 		RequiredAcks: RequireAllReplicas,
-		MaxAttempts:  DefaultMaxRetryAttempts,
+		// MaxAttempts is set to 0 because the retries are handled by the producer.
+		// The amount of the retries is configurable via the producer Settings.Retries.
+		MaxAttempts: 0,
 
 		ReadTimeout:  DefaultWriterReadTimeout,
 		WriteTimeout: DefaultWriterWriteTimeout,

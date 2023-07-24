@@ -58,9 +58,9 @@ func TestSaneDefaults(t *testing.T) {
 	// Endpoint
 	assert.Equal(t, writer.Addr.String(), writerConf.Connection().Bootstrap[0])
 
-	// Safetyß
+	// Safety
 	assert.Equal(t, int(writer.RequiredAcks), -1)
-	assert.Equal(t, writer.MaxAttempts, 3)
+	assert.Equal(t, writer.MaxAttempts, 0)
 	assert.Equal(t, writer.WriteTimeout, 30*time.Second)
 
 	// Non-batched by default.
