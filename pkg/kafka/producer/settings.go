@@ -19,7 +19,9 @@ type Settings struct {
 	AsyncWrites  bool          `cfg:"async_writes"`
 	Balancer     string        `cfg:"balancer" default:"default"`
 	Retries      int           `cfg:"retries" default:"5"`
-	connection   *connection.Settings
+	WriteTimeout time.Duration `cfg:"write_timeout" default:"30s"`
+
+	connection *connection.Settings
 }
 
 func (s *Settings) Connection() *connection.Settings {

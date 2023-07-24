@@ -53,6 +53,13 @@ func WithBalancer(balancer kafka.Balancer) WriterOption {
 	}
 }
 
+// WithWriteTimeout allows to overwrite the kafka writer WriteTimeout.
+func WithWriteTimeout(timeout time.Duration) WriterOption {
+	return func(wc *kafka.WriterConfig) {
+		wc.WriteTimeout = timeout
+	}
+}
+
 func getOptions(conf *Settings) []WriterOption {
 	opts := []WriterOption{}
 
@@ -72,6 +79,8 @@ func getOptions(conf *Settings) []WriterOption {
 	if balancer, ok := kafkaBalancers[conf.Balancer]; ok {
 		opts = append(opts, WithBalancer(balancer))
 	}
+
+	opts = append(opts, WithWriteTimeout(conf.WriteTimeout))
 
 	return opts
 }

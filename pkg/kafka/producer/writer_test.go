@@ -61,7 +61,6 @@ func TestSaneDefaults(t *testing.T) {
 	// Safety
 	assert.Equal(t, int(writer.RequiredAcks), -1)
 	assert.Equal(t, writer.MaxAttempts, 0)
-	assert.Equal(t, writer.WriteTimeout, 30*time.Second)
 
 	// Non-batched by default.
 	assert.Equal(t, writer.BatchSize, 1)
@@ -107,4 +106,17 @@ func TestWithAsyncWrites(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, writer.Async)
+}
+
+func TestWithWriteTimeout(t *testing.T) {
+	const timeout = time.Second * 5
+	writer, err := producer.NewWriter(
+		logMocks.NewLoggerMockedAll(),
+		writerDialer,
+		writerConf.Connection().Bootstrap,
+		producer.WithWriteTimeout(timeout),
+	)
+	assert.Nil(t, err)
+
+	assert.Equal(t, writer.WriteTimeout, timeout)
 }
