@@ -15,9 +15,6 @@ const (
 	// to be considered durable.
 	RequireAllReplicas = -1
 
-	// DefaultWriterWriteTimeout is how much to wait for a write to go through.
-	DefaultWriterWriteTimeout = 30 * time.Second
-
 	// DefaultWriterReadTimeout is how much to wait for reads.
 	DefaultWriterReadTimeout = 30 * time.Second
 
@@ -56,8 +53,7 @@ func NewWriter(
 		// The amount of the retries is configurable via the producer Settings.Retries.
 		MaxAttempts: 0,
 
-		ReadTimeout:  DefaultWriterReadTimeout,
-		WriteTimeout: DefaultWriterWriteTimeout,
+		ReadTimeout: DefaultWriterReadTimeout,
 
 		CompressionCodec: kafka.Snappy.Codec(),
 
