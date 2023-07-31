@@ -165,7 +165,8 @@ func TestKernelRunSuccess(t *testing.T) {
 func TestKernelRunFailure(t *testing.T) {
 	config, logger, module := createMocks()
 
-	logger.On("Error", "error during the execution of stage %d: %w", kernel.StageApplication, mock.Anything)
+	logger.On("WithFields", mock.Anything).Return(logger)
+	logger.On("Error", "error during the execution of stage %d", kernel.StageApplication)
 
 	module.On("GetStage").Return(kernel.StageApplication)
 	module.On("Run", mock.Anything).Run(func(args mock.Arguments) {
