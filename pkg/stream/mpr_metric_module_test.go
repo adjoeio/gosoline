@@ -2,6 +2,7 @@ package stream_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -45,7 +46,10 @@ var mprMetricModuleTestCases = map[string]mprMetricModuleTestCase{
 		setupMocks: func(s *MprMetricModuleTestSuite) {
 			err := fmt.Errorf("unknown leader election error")
 			s.mockLeaderElection(false, err)
-			s.logger.On("Warn", "will assume leader role as election failed: %s", err)
+			s.logger.On("WithFields", log.Fields{
+				"error": err,
+			}).Return(s.logger)
+			s.logger.On("Warn", "will assume leader role as election failed")
 			s.mockGetMetricMessagesSent(1000, nil)
 			s.mockGetMetricMessagesVisible(0, nil)
 			s.mockGetMetricEcs("DesiredTaskCount", types.StatisticMaximum, 2, nil)
@@ -79,12 +83,13 @@ var mprMetricModuleTestCases = map[string]mprMetricModuleTestCase{
 
 			err := fmt.Errorf("unknown error")
 			s.mockGetMetricMessagesSent(1000, err)
-			s.logger.On("Warn", "can not calculate messages per runner: %s", mock.AnythingOfType("*fmt.wrapError")).Run(func(args mock.Arguments) {
-				s.EqualError(args[1].(error), "can not get number of messages sent: can not get metric data: unknown error")
-			})
+			s.logger.On("WithFields", log.Fields{
+				"error": fmt.Errorf("can not get number of messages sent: %w", fmt.Errorf("can not get metric data: %w", err)),
+			}).Return(s.logger)
+			s.logger.On("Warn", "can not calculate messages per runner")
 		},
 	},
-	"error_on_get_queue_metric_messages_visisble": {
+	"error_on_get_queue_metric_messages_visible": {
 		onRun: func(s *MprMetricModuleTestSuite) {
 			s.cancel()
 		},
@@ -94,9 +99,10 @@ var mprMetricModuleTestCases = map[string]mprMetricModuleTestCase{
 
 			err := fmt.Errorf("unknown error")
 			s.mockGetMetricMessagesVisible(1000, err)
-			s.logger.On("Warn", "can not calculate messages per runner: %s", mock.AnythingOfType("*fmt.wrapError")).Run(func(args mock.Arguments) {
-				s.EqualError(args[1].(error), "can not get number of messages visible: can not get metric data: unknown error")
-			})
+			s.logger.On("WithFields", log.Fields{
+				"error": fmt.Errorf("can not get number of messages visible: %w", fmt.Errorf("can not get metric data: %w", err)),
+			}).Return(s.logger)
+			s.logger.On("Warn", "can not calculate messages per runner")
 		},
 	},
 	"error_on_get_mpr_metric_runner_count": {
@@ -110,9 +116,10 @@ var mprMetricModuleTestCases = map[string]mprMetricModuleTestCase{
 
 			err := fmt.Errorf("unknown error")
 			s.mockGetMetricEcs("DesiredTaskCount", types.StatisticMaximum, 2, err)
-			s.logger.On("Warn", "can not calculate messages per runner: %s", mock.AnythingOfType("*fmt.wrapError")).Run(func(args mock.Arguments) {
-				s.EqualError(args[1].(error), "can not get runner count: can not get metric: unknown error")
-			})
+			s.logger.On("WithFields", log.Fields{
+				"error": fmt.Errorf("can not get runner count: %w", fmt.Errorf("can not get metric: %w", err)),
+			}).Return(s.logger)
+			s.logger.On("Warn", "can not calculate messages per runner")
 		},
 	},
 	"runner_count_zero": {
@@ -125,9 +132,10 @@ var mprMetricModuleTestCases = map[string]mprMetricModuleTestCase{
 			s.mockGetMetricMessagesVisible(0, nil)
 
 			s.mockGetMetricEcs("DesiredTaskCount", types.StatisticMaximum, 0, nil)
-			s.logger.On("Warn", "can not calculate messages per runner: %s", mock.Anything).Run(func(args mock.Arguments) {
-				s.EqualError(args[1].(error), "runner count is zero")
-			})
+			s.logger.On("WithFields", log.Fields{
+				"error": errors.New("runner count is zero"),
+			}).Return(s.logger)
+			s.logger.On("Warn", "can not calculate messages per runner")
 		},
 	},
 	"error_on_get_mpr_metric_messages_per_runner": {
