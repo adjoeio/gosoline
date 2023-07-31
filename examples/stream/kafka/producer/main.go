@@ -73,7 +73,7 @@ func (p outputModule) Run(ctx context.Context) error {
 			}
 
 			msg := stream.NewJsonMessage(string(body))
-			msgAttributes := map[string]interface{}{stream.AttributeKafkaKey: id}
+			msgAttributes := map[string]string{stream.AttributeKafkaKey: id}
 			p.logger.Info("publishing msg with key: %s", id)
 			if err := p.producer.WriteOne(ctx, msg, msgAttributes); err != nil {
 				p.logger.Error("failed to publish record with id %s: %s", id, err)
