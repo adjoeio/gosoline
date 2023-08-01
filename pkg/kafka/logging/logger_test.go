@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/justtrackio/gosoline/pkg/kafka/logging"
+	"github.com/justtrackio/gosoline/pkg/log"
 	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
 )
 
@@ -16,9 +17,11 @@ func TestKafkaLogger(t *testing.T) {
 	defer loggerWithChannel.AssertExpectations(t)
 
 	logger.On("WithChannel", "stream.kafka").Return(loggerWithChannel).Once()
+	loggerWithChannel.On("WithFields", log.Fields{"details": "debug message"}).Return(loggerWithChannel).Once()
+	loggerWithChannel.On("WithFields", log.Fields{"error": "error message"}).Return(loggerWithChannel).Once()
 
-	loggerWithChannel.On("Debug", "debug message").Once()
-	loggerWithChannel.On("Error", "error message").Once()
+	loggerWithChannel.On("Debug", "segmentio kafka-go debug").Once()
+	loggerWithChannel.On("Error", "segmentio kafka-go error").Once()
 
 	kLogger := logging.NewKafkaLogger(logger)
 	kLogger.DebugLogger().Printf("debug message")
