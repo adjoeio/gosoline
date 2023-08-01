@@ -37,7 +37,7 @@ func NewConsumer(ctx context.Context, config cfg.Config, logger log.Logger) (str
 func (c Consumer) Consume(ctx context.Context, todo Todo, attributes map[string]string) (bool, error) {
 	todo.Status = "pending"
 
-	if err := c.producer.WriteOne(ctx, todo); err != nil {
+	if err := c.producer.WriteOne(ctx, todo, attributes); err != nil {
 		return false, fmt.Errorf("can not write todo with id %d: %w", todo.Id, err)
 	}
 
