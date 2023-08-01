@@ -4,23 +4,22 @@ import (
 	"testing"
 
 	"github.com/justtrackio/gosoline/pkg/kafka/logging"
+	"github.com/justtrackio/gosoline/pkg/log"
 	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
 )
 
 func TestKafkaLogger(t *testing.T) {
-	var (
-		logger            = new(logMocks.Logger)
-		loggerWithChannel = new(logMocks.Logger)
-	)
-	defer logger.AssertExpectations(t)
-	defer loggerWithChannel.AssertExpectations(t)
+	logger := logMocks.NewLoggerMock(logMocks.WithTestingT(t))
 
-	logger.On("WithChannel", "stream.kafka").Return(loggerWithChannel).Once()
+	logger.EXPECT().WithChannel("stream.kafka").Return(logger).Once()
 
-	loggerWithChannel.On("Debug", "debug message").Once()
-	loggerWithChannel.On("Error", "error message").Once()
+	logger.EXPECT().WithFields(log.Fields{"details": "debug message"}).Return(logger).Once()
+	logger.EXPECT().Debug("segmentio kafka-go debug", []interface{}(nil)).Once()
 
-	kLogger := logging.NewKafkaLogger(logger)
+	logger.EXPECT().WithFields(log.Fields{"error": "error message"}).Return(logger).Once()
+	logger.EXPECT().Error("segmentio kafka-go error").Once()
+
+	kLogger := logging.NewKafkaLogger(logger, logging.WithDebugLogging(true))
 	kLogger.DebugLogger().Printf("debug message")
 	kLogger.ErrorLogger().Printf("error message")
 }
