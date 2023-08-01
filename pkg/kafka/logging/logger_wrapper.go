@@ -7,6 +7,7 @@ import (
 
 	"github.com/justtrackio/gosoline/pkg/exec"
 	"github.com/justtrackio/gosoline/pkg/funk"
+	"github.com/justtrackio/gosoline/pkg/log"
 )
 
 // various errors related to the kafka clients metadata being outdated or some reorganization being in progress.
@@ -30,7 +31,9 @@ func isNonCriticalKafkaError(msg string) bool {
 type DebugLoggerWrapper KafkaLogger
 
 func (logger DebugLoggerWrapper) Printf(msg string, args ...any) {
-	logger.Debug(msg, args...)
+	logger.WithFields(log.Fields{
+		"details": fmt.Sprintf(msg, args...),
+	}).Debug("segmentio kafka-go debug")
 }
 
 type ErrorLoggerWrapper KafkaLogger
@@ -46,10 +49,14 @@ func (logger ErrorLoggerWrapper) Printf(format string, args ...any) {
 		exec.IsIoTimeoutError(err) ||
 		exec.IsUsedClosedConnectionError(err) ||
 		exec.IsOperationWasCanceledError(err) {
-		logger.Info(format, args...)
+		logger.WithFields(log.Fields{
+			"error": fmt.Sprintf(format, args...),
+		}).Info("segmentio kafka-go error")
 
 		return
 	}
 
-	logger.Error(format, args...)
+	logger.WithFields(log.Fields{
+		"error": fmt.Sprintf(format, args...),
+	}).Error("segmentio kafka-go error")
 }
