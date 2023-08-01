@@ -88,7 +88,7 @@ func (e *messageEncoder) Encode(ctx context.Context, data interface{}, attribute
 }
 
 func (e *messageEncoder) encodeBody(attributes map[string]interface{}, data interface{}) ([]byte, error) {
-	body, err := EncodeMessage(e.encoding, data)
+	body, err := EncodeMessage(e.encoding, data, attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (e *messageEncoder) decodeBody(attributes map[string]interface{}, body []by
 		encoding = *attrEncoding
 	}
 
-	if err := DecodeMessage(encoding, body, out); err != nil {
+	if err := DecodeMessage(encoding, body, attributes, out); err != nil {
 		return err
 	}
 
