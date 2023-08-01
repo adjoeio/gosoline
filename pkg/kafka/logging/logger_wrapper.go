@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/justtrackio/gosoline/pkg/funk"
+	"github.com/justtrackio/gosoline/pkg/log"
 )
 
 var nonCriticalErrors = []string{
@@ -25,7 +26,9 @@ func isNonCriticalError(msg string) bool {
 type DebugLoggerWrapper KafkaLogger
 
 func (logger DebugLoggerWrapper) Printf(msg string, args ...any) {
-	logger.Debug(msg, args...)
+	logger.WithFields(log.Fields{
+		"details": fmt.Sprintf(msg, args...),
+	}).Debug("segmentio kafka-go debug")
 }
 
 type ErrorLoggerWrapper KafkaLogger
@@ -34,10 +37,14 @@ func (logger ErrorLoggerWrapper) Printf(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 
 	if isNonCriticalError(msg) {
-		logger.Info(format, args...)
+		logger.WithFields(log.Fields{
+			"error": fmt.Sprintf(format, args...),
+		}).Info("segmentio kafka-go error")
 
 		return
 	}
 
-	logger.Error(format, args...)
+	logger.WithFields(log.Fields{
+		"error": fmt.Sprintf(format, args...),
+	}).Error("segmentio kafka-go error")
 }
