@@ -1,6 +1,8 @@
 package logging
 
 import (
+	"fmt"
+
 	"github.com/justtrackio/gosoline/pkg/log"
 )
 
@@ -17,9 +19,17 @@ func NewKafkaLogger(logger log.Logger) *KafkaLogger {
 }
 
 func (l *KafkaLogger) DebugLogger() LoggerWrapper {
-	return l.Debug
+	return func(template string, values ...interface{}) {
+		l.WithFields(log.Fields{
+			"details": fmt.Sprintf(template, values...),
+		}).Debug("segmentio kafka-go debug")
+	}
 }
 
 func (l *KafkaLogger) ErrorLogger() LoggerWrapper {
-	return l.Error
+	return func(template string, values ...interface{}) {
+		l.WithFields(log.Fields{
+			"error": fmt.Sprintf(template, values...),
+		}).Error("segmentio kafka-go error")
+	}
 }
