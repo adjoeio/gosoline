@@ -48,7 +48,7 @@ func (s *MessageEncoderSuite) TestEncode() {
 		encoding           stream.EncodingType
 		compression        stream.CompressionType
 		handlers           []stream.EncodeHandler
-		attributes         map[string]interface{}
+		attributes         []map[string]interface{}
 		expectedError      string
 		expectedBody       string
 		expectedAttributes map[string]interface{}
@@ -65,8 +65,13 @@ func (s *MessageEncoderSuite) TestEncode() {
 		"attribute_duplicate": {
 			encoding:    stream.EncodingJson,
 			compression: stream.CompressionNone,
-			attributes: map[string]interface{}{
-				stream.AttributeEncoding: "duplicate",
+			attributes: []map[string]interface{}{
+				{
+					stream.AttributeEncoding: "duplicate",
+				},
+				{
+					stream.AttributeEncoding: "duplicate2",
+				},
 			},
 			expectedError: "duplicate attribute 'encoding' on message",
 		},
@@ -80,9 +85,11 @@ func (s *MessageEncoderSuite) TestEncode() {
 		"json_uncompressed": {
 			encoding:    stream.EncodingJson,
 			compression: stream.CompressionNone,
-			attributes: map[string]interface{}{
-				"attribute1": 5,
-				"attribute2": "test",
+			attributes: []map[string]interface{}{
+				{
+					"attribute1": 5,
+					"attribute2": "test",
+				},
 			},
 			expectedBody: `{"id":3,"text":"example","createdAt":"1984-04-04T00:00:00Z"}`,
 			expectedAttributes: map[string]interface{}{
@@ -94,9 +101,11 @@ func (s *MessageEncoderSuite) TestEncode() {
 		"json_compressed": {
 			encoding:    stream.EncodingJson,
 			compression: stream.CompressionGZip,
-			attributes: map[string]interface{}{
-				"attribute1": 5,
-				"attribute2": "test",
+			attributes: []map[string]interface{}{
+				{
+					"attribute1": 5,
+					"attribute2": "test",
+				},
 			},
 			expectedBody: `H4sIAAAAAAAA/6pWykxRsjLWUSpJrShRslJKrUjMLchJVdJRSi5KTSxJTXEEiRpaWpjoGoBQiIGBFRhFKdUCAgAA//9Q/bHSPAAAAA==`,
 			expectedAttributes: map[string]interface{}{
@@ -117,7 +126,7 @@ func (s *MessageEncoderSuite) TestEncode() {
 			})
 
 			ctx := context.Background()
-			msg, err := encoder.Encode(ctx, data, tt.attributes)
+			msg, err := encoder.Encode(ctx, data, tt.attributes...)
 
 			if tt.expectedError != "" {
 				s.EqualError(err, tt.expectedError)

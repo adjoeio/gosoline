@@ -24,8 +24,8 @@ func WithDefaultMessageBodyEncoding(encoding EncodingType) {
 }
 
 type MessageBodyEncoder interface {
-	Encode(data interface{}) ([]byte, error)
-	Decode(data []byte, out interface{}) error
+	Encode(data interface{}, attributes map[string]interface{}) ([]byte, error)
+	Decode(data []byte, attributes map[string]interface{}, out interface{}) error
 }
 
 var messageBodyEncoders = map[EncodingType]MessageBodyEncoder{
@@ -37,7 +37,7 @@ func AddMessageBodyEncoder(encoding EncodingType, encoder MessageBodyEncoder) {
 	messageBodyEncoders[encoding] = encoder
 }
 
-func EncodeMessage(encoding EncodingType, data interface{}) ([]byte, error) {
+func EncodeMessage(encoding EncodingType, data interface{}, attributes map[string]interface{}) ([]byte, error) {
 	if encoding == "" {
 		return nil, fmt.Errorf("no encoding provided to encode message")
 	}
@@ -48,7 +48,7 @@ func EncodeMessage(encoding EncodingType, data interface{}) ([]byte, error) {
 		return nil, fmt.Errorf("there is no message body encoder available for encoding '%s'", encoding)
 	}
 
-	body, err := encoder.Encode(data)
+	body, err := encoder.Encode(data, attributes)
 	if err != nil {
 		return nil, fmt.Errorf("can not encode message body with encoding '%s': %w", encoding, err)
 	}
@@ -56,14 +56,14 @@ func EncodeMessage(encoding EncodingType, data interface{}) ([]byte, error) {
 	return body, nil
 }
 
-func DecodeMessage(encoding EncodingType, data []byte, out interface{}) error {
+func DecodeMessage(encoding EncodingType, data []byte, attributes map[string]interface{}, out interface{}) error {
 	encoder, ok := messageBodyEncoders[encoding]
 
 	if !ok {
 		return fmt.Errorf("there is no message body decoder available for encoding '%s'", encoding)
 	}
 
-	err := encoder.Decode(data, out)
+	err := encoder.Decode(data, attributes, out)
 	if err != nil {
 		return fmt.Errorf("can not decode message body with encoding '%s': %w", encoding, err)
 	}

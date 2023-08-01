@@ -19,7 +19,7 @@ func NewProtobufEncoder() MessageBodyEncoder {
 	return protobufEncoder{}
 }
 
-func (e protobufEncoder) Encode(data interface{}) ([]byte, error) {
+func (e protobufEncoder) Encode(data interface{}, _ map[string]interface{}) ([]byte, error) {
 	msg, ok := data.(ProtobufEncodable)
 
 	if !ok {
@@ -42,7 +42,7 @@ func (e protobufEncoder) Encode(data interface{}) ([]byte, error) {
 	return base64.Encode(bytes), nil
 }
 
-func (e protobufEncoder) Decode(data64 []byte, out interface{}) error {
+func (e protobufEncoder) Decode(data64 []byte, _ map[string]interface{}, out interface{}) error {
 	msg, ok := out.(ProtobufEncodable)
 
 	if !ok {
