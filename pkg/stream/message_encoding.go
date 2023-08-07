@@ -59,7 +59,11 @@ func NewMessageEncoder(config *MessageEncoderSettings) *messageEncoder {
 func (e *messageEncoder) Encode(ctx context.Context, data interface{}, attributeSets ...map[string]interface{}) (*Message, error) {
 	var err error
 	var body []byte
-	attributes := make(map[string]interface{})
+
+	attributes, err := e.mergeAttributes(attributeSets)
+	if err != nil {
+		return nil, err
+	}
 
 	if body, err = e.encodeBody(attributes, data); err != nil {
 		return nil, fmt.Errorf("could not encode message body: %w", err)
@@ -67,10 +71,6 @@ func (e *messageEncoder) Encode(ctx context.Context, data interface{}, attribute
 
 	if body, err = e.compressBody(attributes, body); err != nil {
 		return nil, fmt.Errorf("could not compress message body: %w", err)
-	}
-
-	if attributes, err = e.mergeAttributes(attributes, attributeSets); err != nil {
-		return nil, err
 	}
 
 	for _, handler := range e.encodeHandlers {
@@ -114,7 +114,8 @@ func (e *messageEncoder) compressBody(attributes map[string]interface{}, body []
 	return compressedBase64, nil
 }
 
-func (e *messageEncoder) mergeAttributes(attributes map[string]interface{}, attributeSets []map[string]interface{}) (map[string]interface{}, error) {
+func (e *messageEncoder) mergeAttributes(attributeSets []map[string]interface{}) (map[string]interface{}, error) {
+	attributes := make(map[string]interface{})
 	for _, set := range attributeSets {
 		for k, v := range set {
 			if _, ok := attributes[k]; ok {
