@@ -49,9 +49,10 @@ func NewWriter(
 
 		// Use a safe default for durability.
 		RequiredAcks: RequireAllReplicas,
-		// MaxAttempts is set to 0 because the retries are handled by the producer.
+		// MaxAttempts is set to 1 because the retries are handled by the producer.
 		// The amount of the retries is configurable via the producer Settings.Retries.
-		MaxAttempts: 0,
+		// NOTE: If MaxAttempts is set to 0, it will default to 10!
+		MaxAttempts: 1,
 
 		ReadTimeout: DefaultWriterReadTimeout,
 
