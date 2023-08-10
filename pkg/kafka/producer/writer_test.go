@@ -60,7 +60,7 @@ func TestSaneDefaults(t *testing.T) {
 
 	// Safety
 	assert.Equal(t, int(writer.RequiredAcks), -1)
-	assert.Equal(t, writer.MaxAttempts, 0)
+	assert.Equal(t, writer.MaxAttempts, 1)
 
 	// Non-batched by default.
 	assert.Equal(t, writer.BatchSize, 1)
