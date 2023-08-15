@@ -85,31 +85,40 @@ func (b *activePartitionBalancer) OnError(msg kafka.Message, _ error) {
 	atomic.StoreInt64(&cb.nextRetryAt, b.clock.Now().Add(b.settings.Delay).UnixMilli())
 }
 
-func (b *activePartitionBalancer) Balance(msg kafka.Message, partitions ...int) (partition int) {
-	defer func() { b.cachePartition(msg.Topic, string(msg.Key), partition) }()
+func (b *activePartitionBalancer) Balance(msg kafka.Message, partitions ...int) (partitionIndex int) {
+	defer func() { b.cachePartition(msg.Topic, string(msg.Key), partitions[partitionIndex]) }()
 
 	// calculate balancer and check if the circuit breaker is open for the calculated partition, if so select a different one
-	partition = b.balancer.Balance(msg, partitions...)
-	cb, ok := b.partitionCircuitBreaker.Load(msg.Topic, partition)
+	partitionIndex = b.balancer.Balance(msg, partitions...)
+	cb, ok := b.partitionCircuitBreaker.Load(msg.Topic, partitions[partitionIndex])
 	if !ok {
-		return partition
+		return partitionIndex
 	}
 
 	if b.circuitIsClosed(cb) {
 		// circuit is closed proceed with the defaultPartition
-		return partition
+		return partitionIndex
 	}
 
 	if b.canRetry(cb) {
 		// enough time has passed so we can retry
-		return partition
+		return partitionIndex
 	}
 
 	eligiblePartitions := b.partitionCircuitBreaker.GetActivePartitions(msg.Topic, partitions)
+	if len(eligiblePartitions) == 0 {
+		return 0
+	}
 
-	partition = b.Balance(msg, eligiblePartitions...)
+	eligiblePartitionIndex := b.Balance(msg, eligiblePartitions...)
+	for i, v := range partitions {
+		if v == eligiblePartitions[eligiblePartitionIndex] {
+			partitionIndex = i
+			break
+		}
+	}
 
-	return partition
+	return partitionIndex
 }
 
 func (b *activePartitionBalancer) circuitIsClosed(cb *PartitionCircuitBreaker) bool {

@@ -52,7 +52,7 @@ func Test_activePartitionHashBalancer_Balance(t *testing.T) {
 		},
 	)
 
-	partitions := []int{0, 1, 2, 4, 5}
+	partitions := []int{0, 1, 2, 3, 4, 5}
 	msg1 := kafkaMessageWithId("1")
 	msg2 := kafkaMessageWithId("2")
 	assert.Equal(t, 1, activePartitionBalancer.Balance(msg1, partitions...))
@@ -67,6 +67,45 @@ func Test_activePartitionHashBalancer_Balance(t *testing.T) {
 	fakeClock.Advance(time.Minute * 2)
 	assert.Equal(t, 1, activePartitionBalancer.Balance(msg1, partitions...))
 	activePartitionBalancer.OnError(msg1, failureErr)
+}
+
+func Test_activePartitionHashBalancer_HashBalance(t *testing.T) {
+	fakeClock := clock.NewFakeClock()
+	activePartitionBalancer := producer.NewActivePartitionHashBalancerWithInterfaces(
+		&kafka.Hash{},
+		fakeClock,
+		&producer.PartitionCircuitBreakerSettings{
+			Retries: 1,
+			Delay:   time.Minute,
+		},
+	)
+
+	partitions := []int{0, 1, 2, 3, 4, 5}
+	msg1 := kafkaMessageWithId("1")
+	assert.Equal(t, 4, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnError(msg1, failureErr)
+	assert.Equal(t, 5, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnError(msg1, failureErr)
+	assert.Equal(t, 0, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnError(msg1, failureErr)
+	assert.Equal(t, 2, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnError(msg1, failureErr)
+	assert.Equal(t, 1, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnError(msg1, failureErr)
+	assert.Equal(t, 3, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnError(msg1, failureErr)
+	assert.Equal(t, 0, activePartitionBalancer.Balance(msg1, partitions...)) // no more eligible paritions
+	activePartitionBalancer.OnError(msg1, failureErr)
+	assert.Equal(t, 0, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnError(msg1, failureErr)
+	assert.Equal(t, 0, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnError(msg1, failureErr)
+
+	fakeClock.Advance(time.Minute * 2) // we should be able to retry now
+	assert.Equal(t, 4, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnSuccess(msg1)
+	assert.Equal(t, 4, activePartitionBalancer.Balance(msg1, partitions...))
+	activePartitionBalancer.OnSuccess(msg1)
 }
 
 func kafkaMessageWithId(id string) kafka.Message {
