@@ -31,7 +31,7 @@ var (
 
 func TestTransport(t *testing.T) {
 	writer, err := producer.NewWriter(
-		logMocks.NewLoggerMockedAll(), writerDialer, writerConf.Connection().Bootstrap,
+		logMocks.NewLoggerMockedAll(), writerDialer, writerConf,
 		producer.WithBalancer(&kafka.Hash{}),
 	)
 	assert.Nil(t, err)
@@ -52,7 +52,7 @@ func TestTransport(t *testing.T) {
 }
 
 func TestSaneDefaults(t *testing.T) {
-	writer, err := producer.NewWriter(logMocks.NewLoggerMockedAll(), writerDialer, writerConf.Connection().Bootstrap)
+	writer, err := producer.NewWriter(logMocks.NewLoggerMockedAll(), writerDialer, writerConf)
 	assert.Nil(t, err)
 
 	// Endpoint
@@ -68,11 +68,13 @@ func TestSaneDefaults(t *testing.T) {
 
 	// Performance.
 	assert.Equal(t, writer.Compression, kafka.Snappy)
+	assert.Nil(t, writer.Logger)
+	assert.NotNil(t, writer.ErrorLogger)
 }
 
 func TestSaneDefaultsFallback(t *testing.T) {
 	writer, err := producer.NewWriter(
-		logMocks.NewLoggerMockedAll(), writerDialer, writerConf.Connection().Bootstrap,
+		logMocks.NewLoggerMockedAll(), writerDialer, writerConf,
 		producer.WithBatch(0, time.Microsecond),
 	)
 	assert.Nil(t, err)
@@ -88,7 +90,7 @@ func TestWithBatch(t *testing.T) {
 	)
 
 	writer, err := producer.NewWriter(
-		logMocks.NewLoggerMockedAll(), writerDialer, writerConf.Connection().Bootstrap,
+		logMocks.NewLoggerMockedAll(), writerDialer, writerConf,
 		producer.WithBatch(batchSize, batchInterval),
 	)
 	assert.Nil(t, err)
@@ -100,7 +102,7 @@ func TestWithBatch(t *testing.T) {
 
 func TestWithAsyncWrites(t *testing.T) {
 	writer, err := producer.NewWriter(
-		logMocks.NewLoggerMockedAll(), writerDialer, writerConf.Connection().Bootstrap,
+		logMocks.NewLoggerMockedAll(), writerDialer, writerConf,
 		producer.WithAsyncWrites(),
 	)
 
@@ -113,7 +115,7 @@ func TestWithWriteTimeout(t *testing.T) {
 	writer, err := producer.NewWriter(
 		logMocks.NewLoggerMockedAll(),
 		writerDialer,
-		writerConf.Connection().Bootstrap,
+		writerConf,
 		producer.WithWriteTimeout(timeout),
 	)
 	assert.Nil(t, err)

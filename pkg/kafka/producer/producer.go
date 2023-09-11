@@ -31,7 +31,7 @@ func NewProducer(_ context.Context, conf cfg.Config, logger log.Logger, name str
 	}
 
 	// Writer.
-	writer, err := NewWriter(logger, dialer, settings.Connection().Bootstrap, getOptions(settings)...)
+	writer, err := NewWriter(logger, dialer, settings, getOptions(settings)...)
 	if err != nil {
 		return nil, fmt.Errorf("kafka: failed to get writer: %w", err)
 	}
