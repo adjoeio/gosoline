@@ -19,8 +19,10 @@ type Settings struct {
 	// FQGroupID is the fully-qualified group id (with prefix).
 	FQGroupID    string
 	BatchSize    int           `cfg:"batch_size" default:"1"`
-	BatchTimeout time.Duration `cfg:"idle_timeout" default:"1s"`
-	StartOffset  string        `cfg:"start_offset" default:"last" validate:"oneof=first last"`
+	BatchTimeout time.Duration `cfg:"idle_timeout" default:"10ms"`
+	// Enables debug logs for segmentio/kafka module.
+	DebugLogs   bool   `cfg:"debug_logs" default:"false"`
+	StartOffset string `cfg:"start_offset" default:"last" validate:"oneof=first last"`
 }
 
 func (s *Settings) Connection() *connection.Settings {

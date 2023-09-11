@@ -76,7 +76,13 @@ func NewReader(
 
 		StartOffset: startOffset,
 
-		Logger:      logging.NewKafkaLogger(logger).DebugLogger(),
+		Logger: func() logging.LoggerWrapper {
+			// Sets logger if debug logs are enabled.
+			if settings.DebugLogs {
+				return logging.NewKafkaLogger(logger).DebugLogger()
+			}
+			return nil
+		}(),
 		ErrorLogger: logging.NewKafkaLogger(logger).ErrorLogger(),
 	}
 
