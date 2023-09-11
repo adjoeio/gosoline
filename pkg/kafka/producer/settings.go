@@ -20,7 +20,8 @@ type Settings struct {
 	Balancer     string        `cfg:"balancer" default:"default"`
 	Retries      int           `cfg:"retries" default:"5"`
 	WriteTimeout time.Duration `cfg:"write_timeout" default:"30s"`
-
+	// Enables debug logs for segmentio/kafka module.
+	DebugLogs  bool `cfg:"debug_logs" default:"false"`
 	connection *connection.Settings
 }
 

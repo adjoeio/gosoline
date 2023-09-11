@@ -35,12 +35,12 @@ type Writer interface {
 func NewWriter(
 	logger log.Logger,
 	dialer *kafka.Dialer,
-	bootstrap []string,
+	settings *Settings,
 	opts ...WriterOption,
 ) (*kafka.Writer, error) {
 	// Config.
 	conf := &kafka.WriterConfig{
-		Brokers: bootstrap,
+		Brokers: settings.Connection().Bootstrap,
 		Dialer:  dialer,
 
 		// Non-batched by default.
@@ -58,7 +58,12 @@ func NewWriter(
 
 		CompressionCodec: kafka.Snappy.Codec(),
 
-		Logger:      logging.NewKafkaLogger(logger).DebugLogger(),
+		Logger: func() logging.LoggerWrapper {
+			if settings.DebugLogs {
+				return logging.NewKafkaLogger(logger).DebugLogger()
+			}
+			return nil
+		}(),
 		ErrorLogger: logging.NewKafkaLogger(logger).ErrorLogger(),
 	}
 	for _, opt := range opts {

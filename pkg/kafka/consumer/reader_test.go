@@ -40,6 +40,8 @@ func TestSaneDefaults(t *testing.T) {
 	assert.Equal(t, reader.Config().GroupID, readerConf.FQGroupID)
 
 	assert.Equal(t, reader.Config().StartOffset, kafka.LastOffset)
+	assert.Nil(t, reader.Config().Logger)
+	assert.NotNil(t, reader.Config().ErrorLogger)
 }
 
 func TestFallsbackToSaneDefaults(t *testing.T) {
