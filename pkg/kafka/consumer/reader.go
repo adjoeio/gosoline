@@ -76,7 +76,7 @@ func NewReader(
 			if conf.DebugLogs {
 				return logging.NewKafkaLogger(logger).DebugLogger()
 			}
-			return nil
+			return logging.NewKafkaLogger(logger).NOOPLogger()
 		}(),
 		ErrorLogger: logging.NewKafkaLogger(logger).ErrorLogger(),
 	}

@@ -68,7 +68,7 @@ func TestSaneDefaults(t *testing.T) {
 
 	// Performance.
 	assert.Equal(t, writer.Compression, kafka.Snappy)
-	assert.Nil(t, writer.Logger)
+	assert.NotNil(t, writer.Logger)
 	assert.NotNil(t, writer.ErrorLogger)
 }
 
