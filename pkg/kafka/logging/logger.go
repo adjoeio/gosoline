@@ -33,3 +33,8 @@ func (l *KafkaLogger) ErrorLogger() LoggerWrapper {
 		}).Error("segmentio kafka-go error")
 	}
 }
+
+func (l *KafkaLogger) NOOPLogger() LoggerWrapper {
+	return func(template string, values ...interface{}) {
+	}
+}
