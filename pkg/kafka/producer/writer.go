@@ -62,7 +62,7 @@ func NewWriter(
 			if settings.DebugLogs {
 				return logging.NewKafkaLogger(logger).DebugLogger()
 			}
-			return nil
+			return logging.NewKafkaLogger(logger).NOOPLogger()
 		}(),
 		ErrorLogger: logging.NewKafkaLogger(logger).ErrorLogger(),
 	}

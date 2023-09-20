@@ -23,3 +23,8 @@ func (logger KafkaLogger) DebugLogger() DebugLoggerWrapper {
 func (logger KafkaLogger) ErrorLogger() ErrorLoggerWrapper {
 	return ErrorLoggerWrapper{logger}
 }
+
+func (l *KafkaLogger) NOOPLogger() LoggerWrapper {
+	return func(template string, values ...interface{}) {
+	}
+}
