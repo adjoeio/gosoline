@@ -111,12 +111,12 @@ func (s *ChangeHistoryTestSuite) TestChangeHistoryMigration_Migrate_CreateTable(
 	envConfig := s.Env().Config()
 	envLogger := s.Env().Logger()
 
-	modelRepo, err := db_repo.New(envConfig, envLogger, db_repo.Settings{
+	modelRepo, err := db_repo.New(context.Background(), envConfig, envLogger, db_repo.Settings{
 		Metadata: TestModel1Metadata,
 	})
 	s.NoError(err)
 
-	modelHistoryRepo, err := db_repo.New(envConfig, envLogger, db_repo.Settings{
+	modelHistoryRepo, err := db_repo.New(context.Background(), envConfig, envLogger, db_repo.Settings{
 		Metadata: TestHistoryModel1Metadata,
 	})
 	s.NoError(err)
@@ -163,12 +163,12 @@ func (s *ChangeHistoryTestSuite) TestChangeHistoryMigration_Migrate_UpdateTable(
 	envConfig := s.Env().Config()
 	envLogger := s.Env().Logger()
 
-	modelRepo, err := db_repo.New(envConfig, envLogger, db_repo.Settings{
+	modelRepo, err := db_repo.New(context.Background(), envConfig, envLogger, db_repo.Settings{
 		Metadata: TestModel2Metadata,
 	})
 	s.NoError(err)
 
-	modelHistoryRepo, err := db_repo.New(envConfig, envLogger, db_repo.Settings{
+	modelHistoryRepo, err := db_repo.New(context.Background(), envConfig, envLogger, db_repo.Settings{
 		Metadata: TestHistoryModel2Metadata,
 	})
 	s.NoError(err)

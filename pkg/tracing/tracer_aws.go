@@ -32,7 +32,7 @@ type awsTracer struct {
 	enabled bool
 }
 
-func NewAwsTracer(config cfg.Config, logger log.Logger) (Tracer, error) {
+func NewAwsTracer(_ context.Context, config cfg.Config, logger log.Logger) (Tracer, error) {
 	appId := cfg.AppId{}
 	appId.PadFromConfig(config)
 
@@ -94,17 +94,14 @@ func (t *awsTracer) StartSubSpan(ctx context.Context, name string) (context.Cont
 		return ctx, disabledSpan()
 	}
 
-	var ctxWithSegment, ctxWithSpan context.Context
+	var ctxWithSegment context.Context
 	var segment *xray.Segment
-	var span Span
 
 	if ctxWithSegment, segment = xray.BeginSubsegment(ctx, name); segment == nil {
 		return ctx, disabledSpan()
 	}
 
-	ctxWithSpan, span = newSpan(ctxWithSegment, segment, t.AppId)
-
-	return ctxWithSpan, span
+	return newSpan(ctxWithSegment, segment, t.AppId)
 }
 
 func (t *awsTracer) StartSpan(name string) (context.Context, Span) {

@@ -73,7 +73,7 @@ func New(definer Definer) kernel.ModuleFactory {
 		var metadata *appctx.Metadata
 		var compressionMiddlewares []gin.HandlerFunc
 
-		if tracer, err = tracing.ProvideTracer(config, logger); err != nil {
+		if tracer, err = tracing.ProvideTracer(ctx, config, logger); err != nil {
 			return nil, fmt.Errorf("can not create tracer: %w", err)
 		}
 
