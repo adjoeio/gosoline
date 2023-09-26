@@ -32,7 +32,7 @@ type awsTracer struct {
 	enabled bool
 }
 
-func NewAwsTracer(config cfg.Config, logger log.Logger) (Tracer, error) {
+func NewAwsTracer(_ context.Context, config cfg.Config, logger log.Logger) (Tracer, error) {
 	appId := cfg.AppId{}
 	appId.PadFromConfig(config)
 
