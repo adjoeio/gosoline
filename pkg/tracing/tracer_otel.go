@@ -20,6 +20,8 @@ const (
 	instrumentationVersion = "v0.8.0"
 )
 
+var _ Tracer = &otelTracer{}
+
 type OtelSettings struct {
 	Exporter      string  `cfg:"exporter"`
 	SamplingRatio float64 `cfg:"sampling_ratio" default:"0.05"`

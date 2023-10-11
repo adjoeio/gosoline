@@ -19,6 +19,8 @@ const (
 	xrayDefaultMaxSubsegmentCount = 20
 )
 
+var _ Tracer = &awsTracer{}
+
 type XrayTracerSettings struct {
 	AddressType                 string                `cfg:"addr_type" default:"local" validate:"required"`
 	AddressValue                string                `cfg:"add_value" default:""`

@@ -19,7 +19,7 @@ type Tracer interface {
 }
 
 type TracerSettings struct {
-	Provider string `cfg:"provider" default:"xray" validate:"required"`
+	Provider string `cfg:"provider"`
 	Enabled  bool   `cfg:"enabled" default:"false"`
 }
 
