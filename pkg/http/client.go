@@ -15,6 +15,7 @@ import (
 	"github.com/justtrackio/gosoline/pkg/clock"
 	"github.com/justtrackio/gosoline/pkg/log"
 	"github.com/justtrackio/gosoline/pkg/metric"
+	"github.com/justtrackio/gosoline/pkg/tracing"
 )
 
 const (
@@ -65,9 +66,9 @@ type headers map[string]string
 type client struct {
 	logger         log.Logger
 	clock          clock.Clock
+	metricWriter   metric.Writer
 	defaultHeaders headers
 	http           restyClient
-	metricWriter   metric.Writer
 }
 
 type Settings struct {
@@ -79,25 +80,33 @@ type Settings struct {
 	RetryResetReaders      bool                   `cfg:"retry_reset_readers" default:"true"`
 	RetryWaitTime          time.Duration          `cfg:"retry_wait_time" default:"100ms"`
 	CircuitBreakerSettings CircuitBreakerSettings `cfg:"circuit_breaker"`
+	EnableTracing          bool                   `cfg:"enable_tracing" default:"false"`
 }
 
 func ProvideHttpClient(ctx context.Context, config cfg.Config, logger log.Logger, name string) (Client, error) {
 	type httpClientName string
 
 	return appctx.Provide(ctx, httpClientName(name), func() (Client, error) {
-		return newHttpClient(config, logger, name), nil
+		return newHttpClient(ctx, config, logger, name)
 	})
 }
 
-func newHttpClient(config cfg.Config, logger log.Logger, name string) Client {
+func newHttpClient(ctx context.Context, config cfg.Config, logger log.Logger, name string) (Client, error) {
 	metricWriter := metric.NewWriter()
+	tracer, err := tracing.ProvideTracer(ctx, config, logger)
+	if err != nil {
+		return nil, err
+	}
 	settings := UnmarshalClientSettings(config, name)
 
-	var httpClient *resty.Client
+	baseHttpClient := &http.Client{}
+	if settings.EnableTracing {
+		baseHttpClient = tracer.HttpClient(baseHttpClient)
+	}
+
+	httpClient := resty.NewWithClient(baseHttpClient)
 	if settings.DisableCookies {
-		httpClient = resty.NewWithClient(&http.Client{})
-	} else {
-		httpClient = resty.New()
+		httpClient.SetCookieJar(nil)
 	}
 
 	if settings.FollowRedirects {
@@ -119,7 +128,7 @@ func newHttpClient(config cfg.Config, logger log.Logger, name string) Client {
 		client = NewCircuitBreakerClientWithInterfaces(client, logger, clock.Provider, name, settings.CircuitBreakerSettings)
 	}
 
-	return client
+	return client, nil
 }
 
 func NewHttpClientWithInterfaces(logger log.Logger, clock clock.Clock, metricWriter metric.Writer, httpClient restyClient) Client {
