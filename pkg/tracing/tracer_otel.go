@@ -151,7 +151,7 @@ func (t *otelTracer) HttpHandler(h http.Handler) http.Handler {
 	name := fmt.Sprintf("%v-%v-%v-%v", t.Project, t.Environment, t.Family, t.Application)
 	handlerFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		ctx, span := t.tracer.Start(r.Context(), name)
+		span := trace.SpanFromContext(r.Context())
 
 		ctx, _ = newOtelSpan(ctx, span)
 		r = r.WithContext(ctx)
@@ -160,6 +160,15 @@ func (t *otelTracer) HttpHandler(h http.Handler) http.Handler {
 	})
 
 	return otelhttp.NewHandler(handlerFunc, name)
+}
+
+func (t *otelTracer) HttpClient(baseClient *http.Client) *http.Client {
+	return &http.Client{
+		Transport:     otelhttp.NewTransport(baseClient.Transport),
+		CheckRedirect: baseClient.CheckRedirect,
+		Jar:           baseClient.Jar,
+		Timeout:       baseClient.Timeout,
+	}
 }
 
 func (t *otelTracer) GrpcUnaryServerInterceptor() grpc.UnaryServerInterceptor {
