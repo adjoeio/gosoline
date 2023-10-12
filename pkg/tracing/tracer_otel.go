@@ -161,6 +161,15 @@ func (t *otelTracer) HttpHandler(h http.Handler) http.Handler {
 	return otelhttp.NewHandler(handlerFunc, name)
 }
 
+func (t *otelTracer) HttpClient(baseClient *http.Client) *http.Client {
+	return &http.Client{
+		Transport:     otelhttp.NewTransport(baseClient.Transport),
+		CheckRedirect: baseClient.CheckRedirect,
+		Jar:           baseClient.Jar,
+		Timeout:       baseClient.Timeout,
+	}
+}
+
 func (t *otelTracer) GrpcUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return otelgrpc.UnaryServerInterceptor()
 }
