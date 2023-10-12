@@ -11,6 +11,7 @@ import (
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/kernel"
 	"github.com/justtrackio/gosoline/pkg/log"
+	"github.com/justtrackio/gosoline/pkg/tracing"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/gzip"
 	protobuf "google.golang.org/grpc/health/grpc_health_v1"
@@ -44,6 +45,7 @@ func New(name string, definer ServiceDefiner, middlewares ...MiddlewareFactory) 
 			err          error
 			definitions  *Definitions
 			interceptors []grpc.UnaryServerInterceptor
+			tracer       tracing.Tracer
 		)
 		settings := &Settings{}
 		config.UnmarshalKey(fmt.Sprintf("%s.%s", grpcServerConfigKey, name), settings)
@@ -60,6 +62,12 @@ func New(name string, definer ServiceDefiner, middlewares ...MiddlewareFactory) 
 			interceptors = append(interceptors,
 				grpc.UnaryServerInterceptor(m(config, logger)))
 		}
+
+		if tracer, err = tracing.ProvideTracer(ctx, config, logger); err != nil {
+			return nil, fmt.Errorf("can not create tracer: %w", err)
+		}
+
+		interceptors = append(interceptors, tracer.GrpcUnaryServerInterceptor())
 
 		return NewWithInterfaces(ctx, logger, definitions, settings, interceptors...)
 	}
