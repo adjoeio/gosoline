@@ -8,6 +8,7 @@ import (
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/log"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/filters"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -171,5 +172,9 @@ func (t *otelTracer) HttpClient(baseClient *http.Client) *http.Client {
 }
 
 func (t *otelTracer) GrpcUnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return otelgrpc.UnaryServerInterceptor()
+	return otelgrpc.UnaryServerInterceptor(otelgrpc.WithInterceptorFilter(
+		filters.Not(
+			filters.HealthCheck(),
+		),
+	))
 }
