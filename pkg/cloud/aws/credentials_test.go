@@ -8,10 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/justtrackio/gosoline/pkg/cfg/mocks"
-	gosoAws "github.com/justtrackio/gosoline/pkg/cloud/aws"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/justtrackio/gosoline/pkg/cfg/mocks"
+	gosoAws "github.com/justtrackio/gosoline/pkg/cloud/aws"
 )
 
 func TestCredentialsTestSuite(t *testing.T) {
@@ -31,6 +32,8 @@ func (s *CredentialsTestSuite) SetupTest() {
 
 func (s *CredentialsTestSuite) TestNoConfiguredProvider() {
 	s.config.On("IsSet", "cloud.aws.credentials").Return(false)
+	s.config.On("IsSet", "aws.role_arn").Return(false)
+	s.config.On("IsSet", "aws.web_identity_token_file").Return(false)
 
 	provider, err := gosoAws.GetCredentialsProvider(s.ctx, s.config, gosoAws.ClientSettings{})
 
@@ -40,6 +43,8 @@ func (s *CredentialsTestSuite) TestNoConfiguredProvider() {
 
 func (s *CredentialsTestSuite) TestStaticCredentialsProvider() {
 	s.config.On("IsSet", "cloud.aws.credentials").Return(true)
+	s.config.On("IsSet", "aws.role_arn").Return(false)
+	s.config.On("IsSet", "aws.web_identity_token_file").Return(false)
 	s.config.On("UnmarshalKey", "cloud.aws.credentials", mock.AnythingOfType("*aws.Credentials")).Run(func(args mock.Arguments) {
 		credentials := args.Get(1).(*gosoAws.Credentials)
 
@@ -72,4 +77,22 @@ func (s *CredentialsTestSuite) TestAssumeRoleCredentialsProvider() {
 
 	s.NoError(err)
 	s.IsType(&stscreds.AssumeRoleProvider{}, provider, "the provider should be a assume role one")
+}
+
+func (s *CredentialsTestSuite) TestWebIdentityRoleProvider() {
+	s.config.On("IsSet", "aws.role_arn").Return(true)
+	s.config.On("IsSet", "aws.web_identity_token_file").Return(true)
+	s.config.On("UnmarshalKey", "aws", mock.AnythingOfType("*aws.WebIdentitySettings")).Run(func(args mock.Arguments) {
+		credentials := args.Get(1).(*gosoAws.WebIdentitySettings)
+
+		credentials.RoleARN = "arn:aws:iam::0000000000:role/test"
+		credentials.TokenFilePath = "var/path/to/token"
+	})
+
+	provider, err := gosoAws.GetCredentialsProvider(s.ctx, s.config, gosoAws.ClientSettings{
+		UseWebIdentity: true,
+	})
+
+	s.NoError(err)
+	s.IsType(&aws.CredentialsCache{}, provider, "the provider should be a assume role one")
 }
