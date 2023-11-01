@@ -2,6 +2,7 @@ package aws_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -134,6 +135,18 @@ func (s *CredentialsTestSuite) TestProfileCredentials() {
 			s.Equal("sdlc-dev-account", awsLoadOptions.SharedConfigProfile)
 		})
 	}
+}
+
+func (s *CredentialsTestSuite) TestWebIdentityRoleProvider() {
+	_ = os.Setenv("AWS_ROLE_ARN", "arn:aws:iam::0000000000:role/test")
+	_ = os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", "var/path/to/token")
+
+	provider, err := gosoAws.GetCredentialsProvider(s.ctx, gosoAws.ClientSettings{
+		UseWebIdentity: true,
+	})
+
+	s.NoError(err)
+	s.IsType(&aws.CredentialsCache{}, provider, "the provider should be a assume role one")
 }
 
 func (s *CredentialsTestSuite) unmarshalClientSettings(values map[string]interface{}) gosoAws.ClientSettings {
