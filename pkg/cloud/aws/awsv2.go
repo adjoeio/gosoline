@@ -11,6 +11,7 @@ import (
 	awsCfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
+
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/exec"
 	"github.com/justtrackio/gosoline/pkg/log"
@@ -32,16 +33,22 @@ type Credentials struct {
 	SessionToken    string `cfg:"session_token"`
 }
 
+type WebIdentitySettings struct {
+	TokenFilePath string `cfg:"web_identity_token_file"`
+	RoleARN       string `cfg:"role_arn"`
+}
+
 type ClientHttpSettings struct {
 	Timeout time.Duration `cfg:"timeout" default:"0"`
 }
 
 type ClientSettings struct {
-	Region     string             `cfg:"region" default:"eu-central-1"`
-	Endpoint   string             `cfg:"endpoint" default:"http://localhost:4566"`
-	AssumeRole string             `cfg:"assume_role"`
-	HttpClient ClientHttpSettings `cfg:"http_client"`
-	Backoff    exec.BackoffSettings
+	Region         string             `cfg:"region" default:"eu-central-1"`
+	Endpoint       string             `cfg:"endpoint" default:"http://localhost:4566"`
+	AssumeRole     string             `cfg:"assume_role"`
+	UseWebIdentity bool               `cfg:"use_web_identity"`
+	HttpClient     ClientHttpSettings `cfg:"http_client"`
+	Backoff        exec.BackoffSettings
 }
 
 func (s *ClientSettings) SetBackoff(backoff exec.BackoffSettings) {
