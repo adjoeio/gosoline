@@ -102,7 +102,7 @@ func Test_Write_WriteOne(t *testing.T) {
 		},
 	).Times(1)
 
-	prod, err := producer.NewProducerWithInterfaces(conf, logger, writer)
+	prod, err := producer.NewProducerWithInterfaces(conf, logger, writer, producer.NewKafkaHashBalancer())
 	assert.Nil(t, err)
 
 	// Data should contain batch size of messages after consumer is started.
