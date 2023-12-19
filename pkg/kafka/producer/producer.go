@@ -8,6 +8,7 @@ import (
 	"github.com/justtrackio/gosoline/pkg/coffin"
 	"github.com/justtrackio/gosoline/pkg/kafka/connection"
 	"github.com/justtrackio/gosoline/pkg/kafka/logging"
+	"github.com/justtrackio/gosoline/pkg/kernel"
 	"github.com/justtrackio/gosoline/pkg/log"
 	"github.com/segmentio/kafka-go"
 )
@@ -21,8 +22,8 @@ type Producer struct {
 }
 
 // NewProducer returns a topic producer.
-func NewProducer(_ context.Context, conf cfg.Config, logger log.Logger, name string) (*Producer, error) {
-	settings := ParseSettings(conf, name)
+func NewProducer(ctx context.Context, config cfg.Config, logger log.Logger, name string) (*Producer, error) {
+	settings := ParseSettings(config, name)
 
 	// Connection.
 	dialer, err := connection.NewDialer(settings.Connection())
@@ -36,24 +37,31 @@ func NewProducer(_ context.Context, conf cfg.Config, logger log.Logger, name str
 		return nil, fmt.Errorf("kafka: failed to get writer: %w", err)
 	}
 
-	return NewProducerWithInterfaces(settings, logger, writer)
+	balancer := kafkaBalancers[settings.Balancer]
+	if configurable, ok := balancer.(kernel.Configurable); ok {
+		if err := configurable.Init(ctx, config, logger); err != nil {
+			return nil, fmt.Errorf("kafka: failed to configure the balancer")
+		}
+	}
+
+	return NewProducerWithInterfaces(settings, logger, writer, balancer)
 }
 
-func NewProducerWithInterfaces(conf *Settings, logger log.Logger, writer Writer) (*Producer, error) {
+func NewProducerWithInterfaces(settings *Settings, logger log.Logger, writer Writer, balancer KafkaBalancer) (*Producer, error) {
 	logger = logger.WithFields(
 		log.Fields{
-			"kafka_topic":         conf.FQTopic,
-			"kafka_batch_size":    conf.BatchSize,
-			"kafka_batch_timeout": conf.BatchTimeout,
+			"kafka_topic":         settings.FQTopic,
+			"kafka_batch_size":    settings.BatchSize,
+			"kafka_batch_timeout": settings.BatchTimeout,
 		},
 	)
 
 	return &Producer{
-		Settings: conf,
+		Settings: settings,
 		Writer:   writer,
 		Logger:   logging.NewKafkaLogger(logger),
 		pool:     coffin.New(),
-		balancer: kafkaBalancers[conf.Balancer],
+		balancer: balancer,
 	}, nil
 }
 

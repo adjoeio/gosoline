@@ -1,8 +1,13 @@
 package producer
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/justtrackio/gosoline/pkg/log"
+)
 
 type topicPartitionCircuitBreakerStore struct {
+	logger              log.Logger
 	topicCircuitBreaker sync.Map
 	openCircuitAttempts int64
 }
@@ -14,6 +19,10 @@ func NewTopicPartitionCircuitBreakerStore(openCircuitAttempts int64) *topicParti
 	}
 }
 
+func (s *topicPartitionCircuitBreakerStore) WithLogger(logger log.Logger) {
+	s.logger = logger
+}
+
 func (s *topicPartitionCircuitBreakerStore) Delete(topic string, partition int) {
 	cb, ok := s.topicCircuitBreaker.Load(topic)
 	if !ok {
@@ -21,6 +30,7 @@ func (s *topicPartitionCircuitBreakerStore) Delete(topic string, partition int) 
 	}
 
 	cb.(*sync.Map).Delete(partition)
+	s.logInfo("cb close %s-%d", topic, partition)
 }
 
 func (s *topicPartitionCircuitBreakerStore) Load(topic string, partition int) (*PartitionCircuitBreaker, bool) {
@@ -49,6 +59,7 @@ func (s *topicPartitionCircuitBreakerStore) Store(topic string, partition int, p
 	}
 
 	hMap.Store(partition, pcb)
+	s.logInfo("cb open %s-%d", topic, partition)
 }
 
 func (s *topicPartitionCircuitBreakerStore) GetActivePartitions(topic string, partitions []int) []int {
@@ -56,6 +67,8 @@ func (s *topicPartitionCircuitBreakerStore) GetActivePartitions(topic string, pa
 
 	cb, ok := s.topicCircuitBreaker.Load(topic)
 	if !ok {
+		s.logInfo("cb active-partitions %v", topic, partitions)
+
 		return partitions
 	}
 
@@ -76,5 +89,15 @@ func (s *topicPartitionCircuitBreakerStore) GetActivePartitions(topic string, pa
 		activePartitions = append(activePartitions, partition)
 	}
 
+	s.logInfo("cb active-partitions %v", topic, activePartitions)
+
 	return activePartitions
+}
+
+func (s *topicPartitionCircuitBreakerStore) logInfo(fmt string, args ...interface{}) {
+	if s.logger == nil {
+		return
+	}
+
+	s.logger.Info(fmt, args...)
 }
