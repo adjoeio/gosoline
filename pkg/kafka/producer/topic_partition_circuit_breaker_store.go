@@ -67,7 +67,7 @@ func (s *topicPartitionCircuitBreakerStore) GetActivePartitions(topic string, pa
 
 	cb, ok := s.topicCircuitBreaker.Load(topic)
 	if !ok {
-		s.logInfo("cb active-partitions %v", topic, partitions)
+		s.logInfo("cb active-partitions %s %v", topic, partitions)
 
 		return partitions
 	}
@@ -89,7 +89,7 @@ func (s *topicPartitionCircuitBreakerStore) GetActivePartitions(topic string, pa
 		activePartitions = append(activePartitions, partition)
 	}
 
-	s.logInfo("cb active-partitions %v", topic, activePartitions)
+	s.logInfo("cb active-partitions %s %v", topic, activePartitions)
 
 	return activePartitions
 }
