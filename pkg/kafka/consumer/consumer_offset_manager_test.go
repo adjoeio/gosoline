@@ -6,14 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/justtrackio/gosoline/pkg/coffin"
-	"github.com/justtrackio/gosoline/pkg/kafka/consumer"
-	"github.com/justtrackio/gosoline/pkg/kafka/consumer/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
+	"github.com/justtrackio/gosoline/pkg/coffin"
+	"github.com/justtrackio/gosoline/pkg/kafka/consumer"
+	"github.com/justtrackio/gosoline/pkg/kafka/consumer/mocks"
+
 	"github.com/segmentio/kafka-go"
+
+	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
 )
 
 func TestOffsetManager_NotCommitting(t *testing.T) {
@@ -43,7 +45,11 @@ func TestOffsetManager_NotCommitting(t *testing.T) {
 	reader.On("Close").Times(1).Return(nil)
 	defer reader.AssertExpectations(t)
 
-	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, 2, time.Second)
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, settings)
 	pool.GoWithContext(ctx, manager.Start)
 
 	// 1st call to batch() should return a non-empty batch.
@@ -92,7 +98,11 @@ func TestOffsetManager_PartialCommit(t *testing.T) {
 	reader.On("Close").Times(1).Return(nil)
 	defer reader.AssertExpectations(t)
 
-	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, 2, time.Second)
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, settings)
 	pool.GoWithContext(ctx, manager.Start)
 
 	// 1st call to batch() should return a non-empty batch.
@@ -147,7 +157,11 @@ func TestOffsetManager_DoubleCommit(t *testing.T) {
 	reader.On("Close").Times(1).Return(nil)
 	defer reader.AssertExpectations(t)
 
-	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, 2, time.Second)
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, settings)
 	pool.GoWithContext(ctx, manager.Start)
 
 	// 1st call to batch() should return a non-empty batch.
@@ -209,7 +223,11 @@ func TestOffsetManager_FullCommit(t *testing.T) {
 	reader.On("Close").Times(1).Return(nil)
 	defer reader.AssertExpectations(t)
 
-	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, 2, time.Second)
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, settings)
 	pool.GoWithContext(ctx, manager.Start)
 
 	// 1st call to batch() should return a non-empty batch.
@@ -265,7 +283,11 @@ func TestOffsetManager_FetchMessageErrors(t *testing.T) {
 	reader.On("Close").Times(1).Return(nil)
 	defer reader.AssertExpectations(t)
 
-	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, 2, time.Second)
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, settings)
 	assert.ErrorIs(t, manager.Start(ctx), readerErr)
 }
 
@@ -289,11 +311,15 @@ func TestOffsetManager_FlushErrors(t *testing.T) {
 	reader.On("Close").Times(1).Return(readerErr)
 	defer reader.AssertExpectations(t)
 
-	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, 2, time.Second)
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+	manager := consumer.NewOffsetManager(logMocks.NewLoggerMockedAll(), reader, settings)
 	assert.ErrorIs(t, manager.Start(ctx), readerErr)
 }
 
-func OnFetch(ctx context.Context, call int) kafka.Message {
+func OnFetch(_ context.Context, call int) kafka.Message {
 	return kafka.Message{
 		Partition: call + 1,
 		Offset:    int64(call + 1),

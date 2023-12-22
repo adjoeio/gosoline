@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/coffin"
 	"github.com/justtrackio/gosoline/pkg/kafka/connection"
 	"github.com/justtrackio/gosoline/pkg/kafka/logging"
 	"github.com/justtrackio/gosoline/pkg/log"
-	"github.com/segmentio/kafka-go"
 )
 
 type Offset struct {
@@ -27,7 +28,7 @@ type Consumer struct {
 }
 
 func NewConsumer(
-	ctx context.Context, conf cfg.Config, logger log.Logger, key string) (*Consumer, error) {
+	_ context.Context, conf cfg.Config, logger log.Logger, key string) (*Consumer, error) {
 	settings := ParseSettings(conf, key)
 
 	// Connection.
@@ -42,7 +43,7 @@ func NewConsumer(
 		return nil, fmt.Errorf("kafka: failed to get reader: %w", err)
 	}
 
-	manager := NewOffsetManager(logger, reader, settings.BatchSize, settings.BatchTimeout)
+	manager := NewOffsetManager(logger, reader, settings)
 
 	return NewConsumerWithInterfaces(settings, logger, manager)
 }

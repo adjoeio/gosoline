@@ -3,10 +3,10 @@ package consumer
 import (
 	"context"
 	"sync"
-	"time"
+
+	"github.com/segmentio/kafka-go"
 
 	"github.com/justtrackio/gosoline/pkg/log"
-	"github.com/segmentio/kafka-go"
 )
 
 var _ OffsetManager = &offsetManager{}
@@ -21,6 +21,7 @@ type OffsetManager interface {
 
 type offsetManager struct {
 	logger               log.Logger
+	errorLogger          log.Logger
 	reader               Reader
 	readLock             *sync.Mutex
 	incoming             chan kafka.Message
@@ -29,14 +30,27 @@ type offsetManager struct {
 	uncomittedEmptyEvent chan bool
 }
 
-func NewOffsetManager(logger log.Logger, reader Reader, batchSize int, batchTimeout time.Duration) *offsetManager {
+func NewOffsetManager(
+	logger log.Logger,
+	reader Reader,
+	settings *Settings,
+) *offsetManager {
+	batchSize := settings.BatchSize
+	batchTimeout := settings.BatchTimeout
+
 	events := make(chan bool, 1)
 	events <- true
 
 	incoming := make(chan kafka.Message, batchSize)
 
 	return &offsetManager{
-		logger:               logger,
+		logger: func() log.Logger {
+			if settings.DebugLogs {
+				return logger
+			}
+			return log.NewNOOPLogger()
+		}(),
+		errorLogger:          logger,
 		reader:               reader,
 		readLock:             &sync.Mutex{},
 		incoming:             incoming,
@@ -106,11 +120,12 @@ func (m *offsetManager) Commit(ctx context.Context, msgs ...kafka.Message) error
 	for _, msg := range msgs {
 		key := Offset{Partition: msg.Partition, Index: msg.Offset}
 		if _, exists := m.uncomitted[key]; !exists {
-			m.logger.WithFields(log.Fields{
-				"kafka_partition": msg.Partition,
-				"kafka_offset":    msg.Offset,
-				"kafka_key":       msg.Key,
-				"Error":           "commit unknown message",
+			m.errorLogger.WithFields(log.Fields{
+				"kafka_batch_size": len(msgs),
+				"kafka_partition":  msg.Partition,
+				"kafka_offset":     msg.Offset,
+				"kafka_key":        msg.Key,
+				"Error":            "commit unknown message",
 			}).Error("failed to commit message")
 		}
 
@@ -132,7 +147,7 @@ func (m *offsetManager) Flush() error {
 	defer m.logger.Info("flushed messages")
 
 	if err := m.reader.Close(); err != nil {
-		m.logger.WithFields(log.Fields{"Error": err}).Error("failed to flush messages")
+		m.errorLogger.WithFields(log.Fields{"Error": err}).Error("failed to flush messages")
 		return err
 	}
 
