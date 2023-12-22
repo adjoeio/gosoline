@@ -40,11 +40,15 @@ func TestOffsetManager_NotCommitting(t *testing.T) {
 
 	healthCheckTimer := clock.NewHealthCheckTimerWithInterfaces(clock.NewFakeClock(), time.Minute)
 
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+
 	manager := consumer.NewOffsetManager(
 		logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t)),
 		reader,
-		2,
-		time.Second,
+		settings,
 		healthCheckTimer,
 	)
 	pool.GoWithContext(ctx, manager.Start)
@@ -92,11 +96,15 @@ func TestOffsetManager_PartialCommit(t *testing.T) {
 
 	healthCheckTimer := clock.NewHealthCheckTimerWithInterfaces(clock.NewFakeClock(), time.Minute)
 
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+
 	manager := consumer.NewOffsetManager(
 		logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t)),
 		reader,
-		2,
-		time.Second,
+		settings,
 		healthCheckTimer,
 	)
 	pool.GoWithContext(ctx, manager.Start)
@@ -150,11 +158,15 @@ func TestOffsetManager_DoubleCommit(t *testing.T) {
 
 	healthCheckTimer := clock.NewHealthCheckTimerWithInterfaces(clock.NewFakeClock(), time.Minute)
 
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+
 	manager := consumer.NewOffsetManager(
 		logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t)),
 		reader,
-		2,
-		time.Second,
+		settings,
 		healthCheckTimer,
 	)
 	pool.GoWithContext(ctx, manager.Start)
@@ -215,11 +227,15 @@ func TestOffsetManager_FullCommit(t *testing.T) {
 
 	healthCheckTimer := clock.NewHealthCheckTimerWithInterfaces(clock.NewFakeClock(), time.Minute)
 
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+
 	manager := consumer.NewOffsetManager(
 		logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t)),
 		reader,
-		2,
-		time.Second,
+		settings,
 		healthCheckTimer,
 	)
 	pool.GoWithContext(ctx, manager.Start)
@@ -274,11 +290,15 @@ func TestOffsetManager_FetchMessageErrors(t *testing.T) {
 
 	healthCheckTimer := clock.NewHealthCheckTimerWithInterfaces(clock.NewFakeClock(), time.Minute)
 
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+
 	manager := consumer.NewOffsetManager(
 		logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t)),
 		reader,
-		2,
-		time.Second,
+		settings,
 		healthCheckTimer,
 	)
 	assert.ErrorIs(t, manager.Start(ctx), readerErr)
@@ -301,11 +321,15 @@ func TestOffsetManager_FlushErrors(t *testing.T) {
 
 	healthCheckTimer := clock.NewHealthCheckTimerWithInterfaces(clock.NewFakeClock(), time.Minute)
 
+	settings := &consumer.Settings{
+		BatchSize:    2,
+		BatchTimeout: time.Second,
+	}
+
 	manager := consumer.NewOffsetManager(
 		logMocks.NewLoggerMock(logMocks.WithMockAll, logMocks.WithTestingT(t)),
 		reader,
-		2,
-		time.Second,
+		settings,
 		healthCheckTimer,
 	)
 	assert.ErrorIs(t, manager.Start(ctx), readerErr)
