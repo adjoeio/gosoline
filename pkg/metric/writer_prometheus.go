@@ -4,16 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
-	"sync/atomic"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 
 	"github.com/justtrackio/gosoline/pkg/appctx"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/log"
-	"github.com/justtrackio/gosoline/pkg/mdl"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -40,12 +37,9 @@ func ProvideRegistry(ctx context.Context, name string) (*prometheus.Registry, er
 }
 
 type promWriter struct {
-	logger      log.Logger
-	promMetrics sync.Map
-	registry    *prometheus.Registry
-	namespace   string
-	metricLimit int64
-	metrics     *int64
+	logger    log.Logger
+	registry  *prometheus.Registry
+	namespace string
 }
 
 func NewPromWriter(ctx context.Context, config cfg.Config, logger log.Logger) (*promWriter, error) {
@@ -60,16 +54,14 @@ func NewPromWriter(ctx context.Context, config cfg.Config, logger log.Logger) (*
 		return nil, err
 	}
 
-	return NewPromWriterWithInterfaces(logger, registry, namespace, settings.MetricLimit), nil
+	return NewPromWriterWithInterfaces(logger, registry, namespace), nil
 }
 
-func NewPromWriterWithInterfaces(logger log.Logger, registry *prometheus.Registry, namespace string, metricLimit int64) *promWriter {
+func NewPromWriterWithInterfaces(logger log.Logger, registry *prometheus.Registry, namespace string) *promWriter {
 	return &promWriter{
-		logger:      logger.WithChannel("metrics"),
-		registry:    registry,
-		namespace:   namespace,
-		metricLimit: metricLimit,
-		metrics:     mdl.Box(int64(0)),
+		logger:    logger.WithChannel("metrics"),
+		registry:  registry,
+		namespace: namespace,
 	}
 }
 
@@ -118,28 +110,40 @@ func (w *promWriter) promMetricFromDatum(data *Datum) {
 }
 
 func (w *promWriter) promMetric(data *Datum, metricFactory promMetricFactory, metricPersister promMetricPersister) {
-	metric, ok := w.promMetrics.Load(data.Id())
-	if !ok {
-		var err error
-		metric, err = w.addMetric(metricFactory, data)
-		if err != nil {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			switch e := r.(type) {
+			case error:
+				err = fmt.Errorf("metric.prom: failed to write metric: %w", e)
+			default:
+				err = fmt.Errorf("metric.prom: failed to write metric: %v", e)
+			}
 			w.logger.WithFields(log.Fields{"error": err}).Error("failed to write metric")
-			return
 		}
-	}
-
+	}()
+	metric := metricFactory(data)
 	promMetric := metric.(prometheus.Metric)
 	metricPersister(promMetric, data)
 }
 
 func (w *promWriter) promCounter(data *Datum) {
 	counterFactory := func(datum *Datum) prometheus.Metric {
-		return promauto.With(w.registry).NewCounter(prometheus.CounterOpts{
+		counter := prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   w.namespace,
 			Name:        data.MetricName,
 			Help:        w.buildHelp(data),
 			ConstLabels: prometheus.Labels(data.Dimensions),
 		})
+		if err := w.registry.Register(counter); err != nil {
+			are := &prometheus.AlreadyRegisteredError{}
+			if errors.As(err, are) {
+				counter = are.ExistingCollector.(prometheus.Counter)
+			} else {
+				panic(err)
+			}
+		}
+		return counter
 	}
 
 	counterPersister := func(metric prometheus.Metric, datum *Datum) {
@@ -152,12 +156,21 @@ func (w *promWriter) promCounter(data *Datum) {
 
 func (w *promWriter) promGauge(data *Datum) {
 	gaugeFactory := func(datum *Datum) prometheus.Metric {
-		return promauto.With(w.registry).NewGauge(prometheus.GaugeOpts{
+		gauge := prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace:   w.namespace,
 			Name:        data.MetricName,
 			Help:        w.buildHelp(data),
 			ConstLabels: prometheus.Labels(data.Dimensions),
 		})
+		if err := w.registry.Register(gauge); err != nil {
+			are := &prometheus.AlreadyRegisteredError{}
+			if errors.As(err, are) {
+				gauge = are.ExistingCollector.(prometheus.Gauge)
+			} else {
+				panic(err)
+			}
+		}
+		return gauge
 	}
 
 	gaugePersister := func(metric prometheus.Metric, datum *Datum) {
@@ -170,12 +183,21 @@ func (w *promWriter) promGauge(data *Datum) {
 
 func (w *promWriter) promSummary(data *Datum) {
 	summaryFactory := func(datum *Datum) prometheus.Metric {
-		return promauto.With(w.registry).NewSummary(prometheus.SummaryOpts{
+		summary := prometheus.NewSummary(prometheus.SummaryOpts{
 			Namespace:   w.namespace,
 			Name:        data.MetricName,
 			Help:        w.buildHelp(data),
 			ConstLabels: prometheus.Labels(data.Dimensions),
 		})
+		if err := w.registry.Register(summary); err != nil {
+			are := &prometheus.AlreadyRegisteredError{}
+			if errors.As(err, are) {
+				summary = are.ExistingCollector.(prometheus.Summary)
+			} else {
+				panic(err)
+			}
+		}
+		return summary
 	}
 
 	summaryPersister := func(metric prometheus.Metric, datum *Datum) {
@@ -188,12 +210,21 @@ func (w *promWriter) promSummary(data *Datum) {
 
 func (w *promWriter) promHistogram(data *Datum) {
 	histogramFactory := func(datum *Datum) prometheus.Metric {
-		return promauto.With(w.registry).NewHistogram(prometheus.HistogramOpts{
+		histogram := prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace:   w.namespace,
 			Name:        data.MetricName,
 			Help:        w.buildHelp(data),
 			ConstLabels: prometheus.Labels(data.Dimensions),
 		})
+		if err := w.registry.Register(histogram); err != nil {
+			are := &prometheus.AlreadyRegisteredError{}
+			if errors.As(err, are) {
+				histogram = are.ExistingCollector.(prometheus.Histogram)
+			} else {
+				panic(err)
+			}
+		}
+		return histogram
 	}
 
 	histogramPersister := func(metric prometheus.Metric, datum *Datum) {
@@ -202,30 +233,6 @@ func (w *promWriter) promHistogram(data *Datum) {
 	}
 
 	w.promMetric(data, histogramFactory, histogramPersister)
-}
-
-func (w *promWriter) addMetric(metricFactory promMetricFactory, data *Datum) (metric prometheus.Metric, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			switch e := r.(type) {
-			case error:
-				err = fmt.Errorf("metric.prom: failed to write metric: %w", e)
-			default:
-				err = fmt.Errorf("metric.prom: failed to write metric: %v", e)
-			}
-		}
-	}()
-
-	if atomic.LoadInt64(w.metrics) >= w.metricLimit {
-		w.logger.Error("fail to write metric due to exceeding limit")
-		return nil, errors.New("metric limit exceeded")
-	}
-
-	metric = metricFactory(data)
-	w.promMetrics.Store(data.Id(), metric)
-	atomic.AddInt64(w.metrics, 1)
-
-	return metric, err
 }
 
 func (w *promWriter) buildHelp(data *Datum) string {
