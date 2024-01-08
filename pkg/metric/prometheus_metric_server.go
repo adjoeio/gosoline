@@ -10,11 +10,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/kernel"
 	"github.com/justtrackio/gosoline/pkg/log"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -22,10 +23,7 @@ const (
 )
 
 type PromSettings struct {
-	// MetricLimit is used to avoid having metrics for which the name is programmatically generated (or have large number
-	// of possible dimensions) which could lead in a memory leak.
-	MetricLimit int64              `cfg:"metric_limit" default:"10000"`
-	Api         PromServerSettings `cfg:"api"`
+	Api PromServerSettings `cfg:"api"`
 }
 
 type PromServerSettings struct {
