@@ -6,14 +6,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sync"
-	"sync/atomic"
 
 	"github.com/justtrackio/gosoline/pkg/appctx"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/coffin"
 	"github.com/justtrackio/gosoline/pkg/log"
-	"github.com/justtrackio/gosoline/pkg/mdl"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -42,12 +39,9 @@ func ProvideRegistry(ctx context.Context, name string) (*prometheus.Registry, er
 }
 
 type prometheusWriter struct {
-	logger      log.Logger
-	promMetrics sync.Map
-	registry    *prometheus.Registry
-	namespace   string
-	metricLimit int64
-	metrics     *int64
+	logger    log.Logger
+	registry  *prometheus.Registry
+	namespace string
 }
 
 func ProvidePrometheusWriter(ctx context.Context, config cfg.Config, logger log.Logger) (Writer, error) {
@@ -68,16 +62,14 @@ func NewPrometheusWriter(ctx context.Context, config cfg.Config, logger log.Logg
 		return nil, err
 	}
 
-	return NewPrometheusWriterWithInterfaces(logger, registry, namespace, settings.MetricLimit), nil
+	return NewPrometheusWriterWithInterfaces(logger, registry, namespace), nil
 }
 
-func NewPrometheusWriterWithInterfaces(logger log.Logger, registry *prometheus.Registry, namespace string, metricLimit int64) Writer {
+func NewPrometheusWriterWithInterfaces(logger log.Logger, registry *prometheus.Registry, namespace string) Writer {
 	return &prometheusWriter{
-		logger:      logger.WithChannel("metrics"),
-		registry:    registry,
-		namespace:   namespace,
-		metricLimit: metricLimit,
-		metrics:     mdl.Box(int64(0)),
+		logger:    logger.WithChannel("metrics"),
+		registry:  registry,
+		namespace: namespace,
 	}
 }
 
@@ -142,30 +134,6 @@ func (w *prometheusWriter) buildHelp(data *Datum) string {
 	return fmt.Sprintf("unit: %s", data.Unit)
 }
 
-func (w *prometheusWriter) createCounter(datum *Datum) *prometheus.CounterVec {
-	return promauto.With(w.registry).NewCounterVec(prometheus.CounterOpts{
-		Namespace: w.namespace,
-		Name:      datum.MetricName,
-		Help:      w.buildHelp(datum),
-	}, w.DatumDimensionKeys(datum))
-}
-
-func (w *prometheusWriter) createGauge(datum *Datum) *prometheus.GaugeVec {
-	return promauto.With(w.registry).NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: w.namespace,
-		Name:      datum.MetricName,
-		Help:      w.buildHelp(datum),
-	}, w.DatumDimensionKeys(datum))
-}
-
-func (w *prometheusWriter) createSummary(datum *Datum) *prometheus.SummaryVec {
-	return promauto.With(w.registry).NewSummaryVec(prometheus.SummaryOpts{
-		Namespace: w.namespace,
-		Name:      datum.MetricName,
-		Help:      w.buildHelp(datum),
-	}, w.DatumDimensionKeys(datum))
-}
-
 func (w *prometheusWriter) createHistogram(datum *Datum) *prometheus.HistogramVec {
 	return promauto.With(w.registry).NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: w.namespace,
@@ -174,102 +142,85 @@ func (w *prometheusWriter) createHistogram(datum *Datum) *prometheus.HistogramVe
 	}, w.DatumDimensionKeys(datum))
 }
 
-func (w *prometheusWriter) addMetric(id string, metric any) error {
-	if atomic.LoadInt64(w.metrics) >= w.metricLimit {
-		w.logger.Error("fail to write metric due to exceeding limit")
-
-		return errors.New("metric limit exceeded")
-	}
-
-	w.promMetrics.Store(id, metric)
-	atomic.AddInt64(w.metrics, 1)
-
-	return nil
-}
-
 func (w *prometheusWriter) promCounter(datum *Datum) {
-	id := w.DatumId(datum)
+	metric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: w.namespace,
+		Name:      datum.MetricName,
+		Help:      w.buildHelp(datum),
+	}, w.DatumDimensionKeys(datum))
 
-	metricI, ok := w.promMetrics.Load(id)
-	if !ok {
-		var err error
-		metric := w.createCounter(datum)
-
-		err = w.addMetric(id, metric)
-		if err != nil {
-			return // error is logged in w.addMetric already
+	if err := w.registry.Register(metric); err != nil {
+		are := &prometheus.AlreadyRegisteredError{}
+		if errors.As(err, are) {
+			metric = are.ExistingCollector.(*prometheus.CounterVec)
+		} else {
+			panic(err)
 		}
-
-		metricI = metric
 	}
 
-	metric := metricI.(*prometheus.CounterVec)
 	metric.
 		With(prometheus.Labels(datum.Dimensions)).
 		Add(datum.Value)
 }
 
 func (w *prometheusWriter) promGauge(datum *Datum) {
-	id := w.DatumId(datum)
+	metric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: w.namespace,
+		Name:      datum.MetricName,
+		Help:      w.buildHelp(datum),
+	}, w.DatumDimensionKeys(datum))
 
-	metricI, ok := w.promMetrics.Load(id)
-	if !ok {
-		var err error
-		metric := w.createGauge(datum)
-
-		err = w.addMetric(id, metric)
-		if err != nil {
-			return // error is logged in w.addMetric already
+	if err := w.registry.Register(metric); err != nil {
+		are := &prometheus.AlreadyRegisteredError{}
+		if errors.As(err, are) {
+			metric = are.ExistingCollector.(*prometheus.GaugeVec)
+		} else {
+			panic(err)
 		}
-
-		metricI = metric
 	}
 
-	metric := metricI.(*prometheus.GaugeVec)
 	metric.
 		With(prometheus.Labels(datum.Dimensions)).
 		Set(datum.Value)
 }
 
 func (w *prometheusWriter) promSummary(datum *Datum) {
-	id := w.DatumId(datum)
+	metric := prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Namespace: w.namespace,
+		Name:      datum.MetricName,
+		Help:      w.buildHelp(datum),
+	}, w.DatumDimensionKeys(datum))
 
-	metricI, ok := w.promMetrics.Load(id)
-	if !ok {
-		var err error
-		metric := w.createSummary(datum)
-
-		err = w.addMetric(id, metric)
-		if err != nil {
-			return // error is logged in w.addMetric already
+	if err := w.registry.Register(metric); err != nil {
+		are := &prometheus.AlreadyRegisteredError{}
+		if errors.As(err, are) {
+			metric = are.ExistingCollector.(*prometheus.SummaryVec)
+		} else {
+			panic(err)
 		}
-
-		metricI = metric
 	}
 
-	metric := metricI.(*prometheus.SummaryVec)
 	metric.
 		With(prometheus.Labels(datum.Dimensions)).
 		Observe(datum.Value)
 }
 
 func (w *prometheusWriter) promHistogram(datum *Datum) {
-	id := w.DatumId(datum)
+	metric := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: w.namespace,
+		Name:      datum.MetricName,
+		Help:      w.buildHelp(datum),
+	}, w.DatumDimensionKeys(datum))
 
-	metricI, ok := w.promMetrics.Load(id)
-	if !ok {
-		var err error
-		metric := w.createHistogram(datum)
-
-		err = w.addMetric(id, metric)
-		if err != nil {
-			return // error is logged in w.addMetric already
+	if err := w.registry.Register(metric); err != nil {
+		are := &prometheus.AlreadyRegisteredError{}
+		if errors.As(err, are) {
+			metric = are.ExistingCollector.(*prometheus.HistogramVec)
+		} else {
+			panic(err)
 		}
-
-		metricI = metric
 	}
 
-	metric := metricI.(*prometheus.HistogramVec)
 	metric.
 		With(prometheus.Labels(datum.Dimensions)).
 		Observe(datum.Value)
