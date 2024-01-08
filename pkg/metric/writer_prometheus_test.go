@@ -5,11 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
-	"github.com/justtrackio/gosoline/pkg/metric"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
+
+	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
+	"github.com/justtrackio/gosoline/pkg/metric"
 )
 
 func Test_promWriter_WriteOne(t *testing.T) {
@@ -63,7 +64,7 @@ func Test_promWriter_WriteOne(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			registry := prometheus.NewRegistry()
-			w := metric.NewPromWriterWithInterfaces(logger, registry, "ns:test", 1000)
+			w := metric.NewPromWriterWithInterfaces(logger, registry, "ns:test")
 			w.WriteOne(tt.data)
 
 			count, err := testutil.GatherAndCount(registry, "ns:test_"+tt.data.MetricName)
@@ -157,7 +158,7 @@ func Test_promWriter_Write(t *testing.T) {
 			}
 
 			registry := prometheus.NewRegistry()
-			w := metric.NewPromWriterWithInterfaces(logger, registry, "ns:test:write", 1000)
+			w := metric.NewPromWriterWithInterfaces(logger, registry, "ns:test:write")
 			w.Write(tt.data)
 
 			var metricOutput = fmt.Sprintf(`
@@ -170,34 +171,4 @@ func Test_promWriter_Write(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
-}
-
-func Test_promWriter_ExceedsLimit(t *testing.T) {
-	logger := logMocks.NewLoggerMockedAll()
-
-	registry := prometheus.NewRegistry()
-	w := metric.NewPromWriterWithInterfaces(logger, registry, "ns:test:exceedslimit", 1)
-	w.WriteOne(&metric.Datum{
-		Priority:   metric.PriorityHigh,
-		MetricName: "counter",
-		Dimensions: nil,
-		Value:      1,
-		Unit:       metric.UnitPromCounter,
-	})
-
-	w.WriteOne(&metric.Datum{
-		Priority:   metric.PriorityHigh,
-		MetricName: "over_limit",
-		Dimensions: nil,
-		Value:      1,
-		Unit:       metric.UnitPromCounter,
-	})
-
-	count, err := testutil.GatherAndCount(registry, "ns:test:exceedslimit_counter")
-	assert.Equal(t, 1, count)
-	assert.NoError(t, err)
-
-	count, err = testutil.GatherAndCount(registry, "ns:test:exceedslimit_over_limit")
-	assert.Equal(t, 0, count)
-	assert.NoError(t, err)
 }
