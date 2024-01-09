@@ -4,20 +4,22 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/coffin"
 	"github.com/justtrackio/gosoline/pkg/kafka/connection"
 	"github.com/justtrackio/gosoline/pkg/kafka/logging"
 	"github.com/justtrackio/gosoline/pkg/log"
-	"github.com/segmentio/kafka-go"
 )
 
 type Producer struct {
-	Settings *Settings
-	Writer   Writer
-	Logger   log.Logger
-	pool     coffin.Coffin
-	balancer KafkaBalancer
+	Settings    *Settings
+	Writer      Writer
+	DebugLogger log.Logger
+	Logger      log.Logger
+	pool        coffin.Coffin
+	balancer    KafkaBalancer
 }
 
 // NewProducer returns a topic producer.
@@ -51,7 +53,7 @@ func NewProducerWithInterfaces(settings *Settings, logger log.Logger, writer Wri
 	return &Producer{
 		Settings: settings,
 		Writer:   writer,
-		Logger:   logging.NewKafkaLogger(logger),
+		Logger:   logging.NewKafkaLogger(logger, logging.WithDebugLogging(settings.DebugLogs)),
 		pool:     coffin.New(),
 		balancer: balancer,
 	}, nil
