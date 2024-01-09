@@ -38,6 +38,10 @@ func NewWriter(
 	settings *Settings,
 	opts ...WriterOption,
 ) (*kafka.Writer, error) {
+	kafkaLogger := logging.NewKafkaLogger(
+		logger,
+		logging.WithDebugLogging(settings.DebugLogs),
+	)
 	// Config.
 	conf := &kafka.WriterConfig{
 		Brokers: settings.Connection().Bootstrap,
@@ -58,13 +62,8 @@ func NewWriter(
 
 		CompressionCodec: kafka.Snappy.Codec(),
 
-		Logger: func() logging.LoggerWrapper {
-			if settings.DebugLogs {
-				return logging.NewKafkaLogger(logger).DebugLogger()
-			}
-			return logging.NewKafkaLogger(logger).NOOPLogger()
-		}(),
-		ErrorLogger: logging.NewKafkaLogger(logger).ErrorLogger(),
+		Logger:      kafkaLogger.DebugLogger(),
+		ErrorLogger: kafkaLogger.ErrorLogger(),
 	}
 	for _, opt := range opts {
 		opt(conf)
