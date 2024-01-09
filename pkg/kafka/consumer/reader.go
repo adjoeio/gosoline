@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/justtrackio/gosoline/pkg/kafka/logging"
 	"github.com/justtrackio/gosoline/pkg/log"
-	"github.com/segmentio/kafka-go"
 )
 
 const (
@@ -49,6 +50,7 @@ func NewReader(
 		startOffset = kafka.LastOffset
 	}
 
+	kafkaLogger := logging.NewKafkaLogger(logger, logging.WithDebugLogging(settings.DebugLogs))
 	c := &kafka.ReaderConfig{
 		Brokers: settings.Connection().Bootstrap,
 		Dialer:  dialer,
@@ -76,14 +78,8 @@ func NewReader(
 
 		StartOffset: startOffset,
 
-		Logger: func() logging.LoggerWrapper {
-			// Sets logger if debug logs are enabled.
-			if settings.DebugLogs {
-				return logging.NewKafkaLogger(logger).DebugLogger()
-			}
-			return logging.NewKafkaLogger(logger).NOOPLogger()
-		}(),
-		ErrorLogger: logging.NewKafkaLogger(logger).ErrorLogger(),
+		Logger:      kafkaLogger.DebugLogger(),
+		ErrorLogger: kafkaLogger.ErrorLogger(),
 	}
 
 	for _, opt := range opts {

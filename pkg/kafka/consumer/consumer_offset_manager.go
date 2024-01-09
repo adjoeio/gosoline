@@ -6,6 +6,7 @@ import (
 
 	"github.com/segmentio/kafka-go"
 
+	"github.com/justtrackio/gosoline/pkg/kafka/logging"
 	"github.com/justtrackio/gosoline/pkg/log"
 )
 
@@ -21,7 +22,6 @@ type OffsetManager interface {
 
 type offsetManager struct {
 	logger               log.Logger
-	errorLogger          log.Logger
 	reader               Reader
 	readLock             *sync.Mutex
 	incoming             chan kafka.Message
@@ -44,13 +44,7 @@ func NewOffsetManager(
 	incoming := make(chan kafka.Message, batchSize)
 
 	return &offsetManager{
-		logger: func() log.Logger {
-			if settings.DebugLogs {
-				return logger
-			}
-			return log.NewNOOPLogger()
-		}(),
-		errorLogger:          logger,
+		logger:               logging.NewKafkaLogger(logger, logging.WithDebugLogging(settings.DebugLogs)),
 		reader:               reader,
 		readLock:             &sync.Mutex{},
 		incoming:             incoming,
@@ -120,7 +114,7 @@ func (m *offsetManager) Commit(ctx context.Context, msgs ...kafka.Message) error
 	for _, msg := range msgs {
 		key := Offset{Partition: msg.Partition, Index: msg.Offset}
 		if _, exists := m.uncomitted[key]; !exists {
-			m.errorLogger.WithFields(log.Fields{
+			m.logger.WithFields(log.Fields{
 				"kafka_batch_size": len(msgs),
 				"kafka_partition":  msg.Partition,
 				"kafka_offset":     msg.Offset,
@@ -147,7 +141,7 @@ func (m *offsetManager) Flush() error {
 	defer m.logger.Info("flushed messages")
 
 	if err := m.reader.Close(); err != nil {
-		m.errorLogger.WithFields(log.Fields{"Error": err}).Error("failed to flush messages")
+		m.logger.WithFields(log.Fields{"Error": err}).Error("failed to flush messages")
 		return err
 	}
 

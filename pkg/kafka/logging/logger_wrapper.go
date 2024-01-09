@@ -26,9 +26,11 @@ func isNonCriticalError(msg string) bool {
 type DebugLoggerWrapper KafkaLogger
 
 func (logger DebugLoggerWrapper) Printf(msg string, args ...any) {
-	logger.WithFields(log.Fields{
-		"details": fmt.Sprintf(msg, args...),
-	}).Debug("segmentio kafka-go debug")
+	if logger.debugLogs {
+		logger.WithFields(log.Fields{
+			"details": fmt.Sprintf(msg, args...),
+		}).Debug("segmentio kafka-go debug")
+	}
 }
 
 type ErrorLoggerWrapper KafkaLogger
