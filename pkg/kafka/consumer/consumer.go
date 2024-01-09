@@ -60,7 +60,7 @@ func NewConsumerWithInterfaces(settings *Settings, logger log.Logger, manager Of
 
 	return &Consumer{
 		settings: settings,
-		logger:   logging.NewKafkaLogger(logger),
+		logger:   logging.NewKafkaLogger(logger, logging.WithDebugLogging(settings.DebugLogs)),
 		pool:     coffin.New(),
 		backlog:  make(chan kafka.Message, settings.BatchSize),
 		manager:  manager,
