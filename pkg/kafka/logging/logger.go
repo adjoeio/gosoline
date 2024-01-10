@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/justtrackio/gosoline/pkg/log"
@@ -25,6 +26,20 @@ func NewKafkaLogger(logger log.Logger, opts ...KafkaLoggerOpt) *KafkaLogger {
 	}
 
 	return kafkaLogger
+}
+
+func (l *KafkaLogger) WithContext(ctx context.Context) log.Logger {
+	return &KafkaLogger{
+		Logger:    l.Logger.WithContext(ctx),
+		debugLogs: l.debugLogs,
+	}
+}
+
+func (l *KafkaLogger) WithFields(fields log.Fields) log.Logger {
+	return &KafkaLogger{
+		Logger:    l.Logger.WithFields(fields),
+		debugLogs: l.debugLogs,
+	}
 }
 
 func (l *KafkaLogger) Debug(format string, args ...interface{}) {
