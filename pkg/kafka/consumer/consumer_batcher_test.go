@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/justtrackio/gosoline/pkg/kafka/consumer"
+	loggerMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
 	"github.com/justtrackio/gosoline/pkg/test/assert"
 	"github.com/segmentio/kafka-go"
 )
@@ -162,7 +163,7 @@ func Test_Batcher_Batch(t *testing.T) {
 			ctx, cancel := tt.args.ctx()
 			defer cancel()
 
-			batcher := consumer.NewBatcher(tt.args.input(), tt.args.batchSize, tt.args.batchTimeout)
+			batcher := consumer.NewBatcher(loggerMocks.NewLoggerMockedAll(), tt.args.input(), tt.args.batchSize, tt.args.batchTimeout)
 			assert.Equal(t, tt.want, batcher.Get(ctx))
 		})
 	}
@@ -170,7 +171,7 @@ func Test_Batcher_Batch(t *testing.T) {
 }
 
 func Test_Batcher_SensibleDefaults(t *testing.T) {
-	batcher := consumer.NewBatcher(make(chan kafka.Message, 1), 0, 0)
+	batcher := consumer.NewBatcher(loggerMocks.NewLoggerMockedAll(), make(chan kafka.Message, 1), 0, 0)
 
 	assert.Equal(t, 1, batcher.BatchSize)
 	assert.Equal(t, 10*time.Millisecond, batcher.BatchTimeout)

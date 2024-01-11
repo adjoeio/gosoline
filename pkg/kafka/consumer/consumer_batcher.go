@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/justtrackio/gosoline/pkg/log"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -20,13 +21,14 @@ type Batcher interface {
 }
 
 type batcher struct {
-	input chan kafka.Message
+	logger log.Logger
+	input  chan kafka.Message
 
 	BatchSize    int
 	BatchTimeout time.Duration
 }
 
-func NewBatcher(input chan kafka.Message, size int, timeout time.Duration) *batcher {
+func NewBatcher(logger log.Logger, input chan kafka.Message, size int, timeout time.Duration) *batcher {
 	if size < minBatchSize {
 		size = minBatchSize
 	}
@@ -34,7 +36,12 @@ func NewBatcher(input chan kafka.Message, size int, timeout time.Duration) *batc
 		timeout = minBatchTimeout
 	}
 
-	return &batcher{input: input, BatchSize: size, BatchTimeout: timeout}
+	return &batcher{
+		logger:       logger,
+		input:        input,
+		BatchSize:    size,
+		BatchTimeout: timeout,
+	}
 }
 
 func (b *batcher) Get(ctx context.Context) []kafka.Message {
@@ -51,6 +58,10 @@ OUT:
 		select {
 		case m := <-b.input:
 			if _, ok := processed[Offset{Partition: m.Partition, Index: m.Offset}]; ok {
+				b.logger.WithContext(ctx).WithFields(log.Fields{
+					"partition": m.Partition,
+					"offset":    m.Offset,
+				}).Warn("found a duplicate message in batch")
 				// skip already processed message
 				continue
 			}
