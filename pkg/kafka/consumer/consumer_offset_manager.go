@@ -48,7 +48,7 @@ func NewOffsetManager(
 		reader:               reader,
 		readLock:             &sync.Mutex{},
 		incoming:             incoming,
-		batcher:              NewBatcher(incoming, batchSize, batchTimeout),
+		batcher:              NewBatcher(logger, incoming, batchSize, batchTimeout),
 		uncomitted:           map[Offset]int64{},
 		uncomittedEmptyEvent: events,
 	}
