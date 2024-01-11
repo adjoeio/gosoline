@@ -10,7 +10,6 @@ import (
 	"github.com/justtrackio/gosoline/pkg/coffin"
 	"github.com/justtrackio/gosoline/pkg/kafka/connection"
 	"github.com/justtrackio/gosoline/pkg/kafka/logging"
-	"github.com/justtrackio/gosoline/pkg/kernel"
 	"github.com/justtrackio/gosoline/pkg/log"
 )
 
@@ -39,14 +38,7 @@ func NewProducer(ctx context.Context, config cfg.Config, logger log.Logger, name
 		return nil, fmt.Errorf("kafka: failed to get writer: %w", err)
 	}
 
-	balancer := kafkaBalancers[settings.Balancer]
-	if configurable, ok := balancer.(kernel.Configurable); ok {
-		if err := configurable.Init(ctx, config, logger); err != nil {
-			return nil, fmt.Errorf("kafka: failed to configure the balancer")
-		}
-	}
-
-	return NewProducerWithInterfaces(settings, logger, writer, balancer)
+	return NewProducerWithInterfaces(settings, logger, writer, kafkaBalancers[settings.Balancer])
 }
 
 func NewProducerWithInterfaces(settings *Settings, logger log.Logger, writer Writer, balancer KafkaBalancer) (*Producer, error) {
