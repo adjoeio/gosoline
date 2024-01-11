@@ -1,15 +1,12 @@
 package producer
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/clock"
-	"github.com/justtrackio/gosoline/pkg/log"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -32,7 +29,6 @@ type PartitionCircuitBreakerSettings struct {
 // should store the circuit breakers per topics/partition
 type activePartitionBalancer struct {
 	balancer                kafka.Balancer
-	logger                  log.Logger
 	clock                   clock.Clock
 	partitionCircuitBreaker *topicPartitionCircuitBreakerStore
 	publishedPartition      sync.Map
@@ -58,17 +54,6 @@ func NewActivePartitionHashBalancerWithInterfaces(balancer kafka.Balancer, clock
 		publishedPartition:      sync.Map{},
 		settings:                settings,
 	}
-}
-
-func (b *activePartitionBalancer) Init(_ context.Context, _ cfg.Config, logger log.Logger) error {
-	logger = logger.WithChannel("kafka_balancer")
-
-	b.logger = logger
-	if b.partitionCircuitBreaker != nil {
-		b.partitionCircuitBreaker.WithLogger(logger)
-	}
-
-	return nil
 }
 
 func (b *activePartitionBalancer) OnSuccess(msg kafka.Message) {
@@ -121,16 +106,12 @@ func (b *activePartitionBalancer) balance(msg kafka.Message, partitions ...int) 
 	}
 
 	if b.canRetry(cb) {
-		b.logInfo("retrying %s-%d", msg.Topic, partitionIndex)
 		// enough time has passed so we can retry
 		return partitionIndex
-	} else {
-		b.logInfo("no retrying %s-%d, next retry at %d", msg.Topic, partitionIndex, cb.nextRetryAt)
 	}
 
 	eligiblePartitions := b.partitionCircuitBreaker.GetActivePartitions(msg.Topic, partitions)
 	if len(eligiblePartitions) == 0 {
-		b.logInfo("no eligible partitions for topic %s", msg.Topic)
 		return 0
 	}
 
@@ -141,8 +122,6 @@ func (b *activePartitionBalancer) balance(msg kafka.Message, partitions ...int) 
 			break
 		}
 	}
-
-	b.logInfo("rebalanced partition %s-%d", msg.Topic, partitionIndex)
 
 	return partitionIndex
 }
@@ -172,12 +151,4 @@ func (b *activePartitionBalancer) loadAndDeleteCachedPartition(topic string, key
 	}
 
 	return val.(int), true
-}
-
-func (b *activePartitionBalancer) logInfo(fmt string, args ...interface{}) {
-	if b.logger == nil {
-		return
-	}
-
-	b.logger.Info(fmt, args...)
 }
