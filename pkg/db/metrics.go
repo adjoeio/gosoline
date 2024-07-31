@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	metricNameDbConnectionCount = "DbConnectionCount"
+	metricNameDbConnectionCount        = "DbConnectionCount"
+	metricNameDbConnectionCountAverage = "DbConnectionCountAverage"
 )
 
 type metricDriver struct {
@@ -58,7 +59,7 @@ func publishConnectionMetrics(conn *sqlx.DB) {
 			output.Write(metric.Data{
 				&metric.Datum{
 					Priority:   metric.PriorityHigh,
-					MetricName: metricNameDbConnectionCount,
+					MetricName: metricNameDbConnectionCountAverage,
 					Dimensions: map[string]string{
 						"Type": "open",
 					},
@@ -67,7 +68,7 @@ func publishConnectionMetrics(conn *sqlx.DB) {
 				},
 				&metric.Datum{
 					Priority:   metric.PriorityHigh,
-					MetricName: metricNameDbConnectionCount,
+					MetricName: metricNameDbConnectionCountAverage,
 					Dimensions: map[string]string{
 						"Type": "inUse",
 					},
@@ -76,7 +77,7 @@ func publishConnectionMetrics(conn *sqlx.DB) {
 				},
 				&metric.Datum{
 					Priority:   metric.PriorityHigh,
-					MetricName: metricNameDbConnectionCount,
+					MetricName: metricNameDbConnectionCountAverage,
 					Dimensions: map[string]string{
 						"Type": "idle",
 					},
