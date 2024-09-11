@@ -7,6 +7,7 @@ import (
 
 	"github.com/justtrackio/gosoline/pkg/log"
 	"github.com/justtrackio/gosoline/pkg/metric"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/stats"
 )
 
@@ -120,6 +121,9 @@ func (s *statsHandler) HandleConn(_ context.Context, _ stats.ConnStats) {
 }
 
 func (s *statsHandler) writeLog(ctx context.Context, holder *statsHolder) {
+	if len(s.settings.Stats.PathLogWhitelist) > 0 && !slices.Contains(s.settings.Stats.PathLogWhitelist, holder.FullMethod) {
+		return
+	}
 	logger := s.logger.
 		WithContext(ctx).
 		WithFields(holder.GetLoggerFields()).

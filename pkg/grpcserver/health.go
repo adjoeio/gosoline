@@ -2,6 +2,7 @@ package grpcserver
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/justtrackio/gosoline/pkg/log"
@@ -34,21 +35,24 @@ type healthServer struct {
 	statusMap map[string]protobuf.HealthCheckResponse_ServingStatus
 	updates   map[string]map[protobuf.Health_WatchServer]chan protobuf.HealthCheckResponse_ServingStatus
 	callbacks []ServiceHealthCallback
+	debugLogs bool
 }
 
 // NewHealthServer returns a new HealthServer.
-func NewHealthServer(logger log.Logger, cancelFunc context.CancelFunc) *healthServer {
+func NewHealthServer(logger log.Logger, cancelFunc context.CancelFunc, debugLogs bool) *healthServer {
 	return &healthServer{
 		logger:     logger,
 		cancelFunc: cancelFunc,
 		statusMap:  map[string]protobuf.HealthCheckResponse_ServingStatus{"": protobuf.HealthCheckResponse_SERVING},
 		updates:    map[string]map[protobuf.Health_WatchServer]chan protobuf.HealthCheckResponse_ServingStatus{},
 		callbacks:  []ServiceHealthCallback{},
+		debugLogs:  debugLogs,
 	}
 }
 
 // Check implements `service Health`.
 func (s *healthServer) Check(ctx context.Context, in *protobuf.HealthCheckRequest) (*protobuf.HealthCheckResponse, error) {
+	s.debugLog("health: check request received")
 	for _, callback := range s.callbacks {
 		if in.Service != "" && in.Service != callback.ServiceName {
 			continue
@@ -74,6 +78,7 @@ func (s *healthServer) Check(ctx context.Context, in *protobuf.HealthCheckReques
 	}
 
 	s.mu.RLock()
+	s.debugLog("health: check acquired lock")
 	defer s.mu.RUnlock()
 	if servingStatus, ok := s.statusMap[in.Service]; ok {
 		s.logger.WithContext(ctx).WithFields(log.Fields{
@@ -92,6 +97,7 @@ func (s *healthServer) Check(ctx context.Context, in *protobuf.HealthCheckReques
 
 // Watch implements `service Health`.
 func (s *healthServer) Watch(in *protobuf.HealthCheckRequest, stream protobuf.Health_WatchServer) error {
+	s.debugLog("health: watch request received")
 	service := in.Service
 	// update channel is used for getting service status updates.
 	update := make(chan protobuf.HealthCheckResponse_ServingStatus, 1)
@@ -163,6 +169,7 @@ func (s *healthServer) SetServingStatus(service string, servingStatus protobuf.H
 // This changes serving status for all services. To set status for a particular
 // services, call SetServingStatus().
 func (s *healthServer) Shutdown() {
+	s.debugLog("health: shutdown")
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.shutdown = true
@@ -177,6 +184,7 @@ func (s *healthServer) Shutdown() {
 // This changes serving status for all services. To set status for a particular
 // services, call SetServingStatus().
 func (s *healthServer) Resume() {
+	s.debugLog("health: resume")
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.shutdown = false
@@ -186,6 +194,7 @@ func (s *healthServer) Resume() {
 }
 
 func (s *healthServer) setServingStatusLocked(service string, servingStatus protobuf.HealthCheckResponse_ServingStatus) {
+	s.debugLog(fmt.Sprintf("health: setServingStatusLocked %s %s", service, servingStatus.String()))
 	s.statusMap[service] = servingStatus
 	for _, update := range s.updates[service] {
 		// Clears previous updates, that are not sent to the client, from the channel.
@@ -197,4 +206,11 @@ func (s *healthServer) setServingStatusLocked(service string, servingStatus prot
 		// Puts the most recent update to the channel.
 		update <- servingStatus
 	}
+}
+
+func (s *healthServer) debugLog(message string) {
+	if !s.debugLogs {
+		return
+	}
+	s.logger.Debug(message)
 }
