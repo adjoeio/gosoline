@@ -15,6 +15,8 @@ type Health struct {
 	// Enabled determines if the default health.checks will be used
 	// the default health-checks utilizes the google.golang.org/grpc/health/grpc_health_v1 pkg.
 	Enabled bool `cfg:"enabled" default:"true"`
+	// DebugLogs determines if the health server will log debug logs.
+	DebugLogs bool `cfg:"debug_logs" default:"false"`
 }
 
 type Stats struct {
@@ -28,4 +30,6 @@ type Stats struct {
 	LogData bool `cfg:"log_data" default:"false"`
 	// Channel to log the statistics to.
 	Channel string `cfg:"channel" default:"grpc_stats"`
+	// PathLogWhitelist defines the paths that should be whitelisted for stats logging, if it is empty all paths will be logged.
+	PathLogWhitelist []string `cfg:"path_log_whitelist"`
 }

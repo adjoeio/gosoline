@@ -98,7 +98,7 @@ func NewWithInterfaces(ctx context.Context, logger log.Logger, definitions *Defi
 
 	if s.Health.Enabled {
 		serverCtx, cancelFunc = context.WithCancel(ctx)
-		hs = NewHealthServer(logger, cancelFunc)
+		hs = NewHealthServer(logger, cancelFunc, s.Health.DebugLogs)
 		protobuf.RegisterHealthServer(server, hs)
 		logger.Info("grpc_server enabled health-checks")
 	}

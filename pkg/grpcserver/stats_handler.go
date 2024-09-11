@@ -2,6 +2,7 @@ package grpcserver
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -120,6 +121,9 @@ func (s *statsHandler) HandleConn(_ context.Context, _ stats.ConnStats) {
 }
 
 func (s *statsHandler) writeLog(ctx context.Context, holder *statsHolder) {
+	if len(s.settings.Stats.PathLogWhitelist) > 0 && !slices.Contains(s.settings.Stats.PathLogWhitelist, holder.FullMethod) {
+		return
+	}
 	logger := s.logger.
 		WithContext(ctx).
 		WithFields(holder.GetLoggerFields()).
