@@ -18,7 +18,7 @@ const (
 
 	MetricApiRequestCount        = "ApiRequestCount"
 	MetricApiRequestResponseTime = "ApiRequestResponseTime"
-	MetricDimensionFullMethod    = "full_method"
+	MetricDimensionFullMethod    = "path"
 )
 
 type statsHandler struct {
