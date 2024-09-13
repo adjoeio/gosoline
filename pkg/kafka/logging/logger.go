@@ -44,7 +44,7 @@ func (l *KafkaLogger) WithFields(fields log.Fields) log.Logger {
 
 func (l *KafkaLogger) Debug(format string, args ...interface{}) {
 	if l.debugLogs {
-		l.Logger.Debug(format, args)
+		l.Logger.Debug(format, args...)
 	}
 }
 

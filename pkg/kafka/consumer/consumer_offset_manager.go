@@ -55,7 +55,13 @@ func NewOffsetManager(
 }
 
 func (m *offsetManager) Start(ctx context.Context) error {
-	defer m.Flush()
+	defer func() {
+		if err := m.Flush(); err != nil {
+			m.logger.WithFields(log.Fields{
+				"Error": err.Error(),
+			}).Error("failed to flush offsets")
+		}
+	}()
 
 	for {
 		m.logger.Debug("fetching a message")
@@ -125,15 +131,20 @@ func (m *offsetManager) Commit(ctx context.Context, msgs ...kafka.Message) error
 
 		delete(m.uncomitted, key)
 	}
+
 	// Kafka is a stream and sequential in nature, there are no per-message acks/nacks,
 	// instead acks are done through offsets (similar to TCP sequence numbers), in other words,
 	// committing an offset implies committing everything that came before it,
 	// as such a batch must be committed before another one can be requested.
+	if err := m.reader.CommitMessages(ctx, msgs...); err != nil {
+		return err
+	}
+
 	if len(m.uncomitted) == 0 {
 		m.uncomittedEmptyEvent <- true
 	}
 
-	return m.reader.CommitMessages(ctx, msgs...)
+	return nil
 }
 
 func (m *offsetManager) Flush() error {

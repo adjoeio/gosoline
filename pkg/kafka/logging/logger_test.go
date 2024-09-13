@@ -23,7 +23,7 @@ func TestKafkaLogger(t *testing.T) {
 	loggerWithChannel.On("Debug", "segmentio kafka-go debug").Once()
 	loggerWithChannel.On("Error", "segmentio kafka-go error").Once()
 
-	kLogger := logging.NewKafkaLogger(logger)
+	kLogger := logging.NewKafkaLogger(logger, logging.WithDebugLogging(true))
 	kLogger.DebugLogger().Printf("debug message")
 	kLogger.ErrorLogger().Printf("error message")
 }
