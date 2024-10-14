@@ -21,7 +21,7 @@ func (o *otelSpan) AddError(err error) {
 	o.span.RecordError(err)
 }
 
-func (o *otelSpan) AddMetadata(key string, value interface{}) {
+func (o *otelSpan) AddMetadata(key string, value any) {
 	o.span.AddEvent(fmt.Sprintf("%s:%v", key, value))
 }
 
