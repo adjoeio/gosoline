@@ -1,9 +1,10 @@
 package http
 
 import (
-	"github.com/go-resty/resty/v2"
 	"net/http"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type restyClient interface {
@@ -12,6 +13,7 @@ type restyClient interface {
 	SetCookie(cookie *http.Cookie) *resty.Client
 	SetCookies(cookies []*http.Cookie) *resty.Client
 	SetProxy(proxy string) *resty.Client
+	SetLogger(logger resty.Logger) *resty.Client
 	SetRedirectPolicy(policies ...interface{}) *resty.Client
 	SetTimeout(timeout time.Duration) *resty.Client
 }
