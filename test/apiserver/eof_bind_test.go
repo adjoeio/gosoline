@@ -12,6 +12,7 @@ import (
 
 	httpHeaders "github.com/go-http-utils/headers"
 	"github.com/go-resty/resty/v2"
+
 	"github.com/justtrackio/gosoline/pkg/apiserver"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/http"
@@ -47,7 +48,7 @@ type bindHandler struct {
 	suite.Suite
 }
 
-func (b bindHandler) Channels() []string {
+func (b bindHandler) Channels() []log.Channel {
 	return nil
 }
 

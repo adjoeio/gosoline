@@ -3,14 +3,15 @@ package mocks
 import (
 	"fmt"
 
-	"github.com/justtrackio/gosoline/pkg/log"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/justtrackio/gosoline/pkg/log"
 )
 
 func NewLoggerMock() *Logger {
 	logger := new(Logger)
 
-	logger.On("WithChannel", mock.AnythingOfType("string")).Return(logger).Maybe()
+	logger.On("WithChannel", mock.Anything).Return(logger).Maybe()
 	logger.On("WithContext", mock.Anything).Return(logger).Maybe()
 	logger.On("WithFields", mock.Anything).Return(logger).Maybe()
 
