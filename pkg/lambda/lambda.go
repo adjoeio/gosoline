@@ -5,7 +5,6 @@ import (
 	"os"
 
 	awsLambda "github.com/aws/aws-lambda-go/lambda"
-
 	"github.com/justtrackio/gosoline/pkg/appctx"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/clock"

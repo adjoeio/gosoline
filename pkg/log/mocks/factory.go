@@ -3,9 +3,8 @@ package mocks
 import (
 	"fmt"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/justtrackio/gosoline/pkg/log"
+	"github.com/stretchr/testify/mock"
 )
 
 func NewLoggerMock() *Logger {

@@ -271,7 +271,7 @@ func TestOffsetManager_FetchMessageErrors(t *testing.T) {
 		readerErr = errors.New("reader: failed")
 	)
 
-	reader.On("FetchMessage", mock.AnythingOfType("context.backgroundCtx")).Return(
+	reader.On("FetchMessage", mock.AnythingOfType("*context.emptyCtx")).Return(
 		func(ctx context.Context) kafka.Message {
 			time.Sleep(time.Millisecond)
 			return kafka.Message{}
@@ -299,7 +299,7 @@ func TestOffsetManager_FlushErrors(t *testing.T) {
 		readerErr = errors.New("reader: failed")
 	)
 
-	reader.On("FetchMessage", mock.AnythingOfType("context.backgroundCtx")).Return(
+	reader.On("FetchMessage", mock.AnythingOfType("*context.emptyCtx")).Return(
 		func(ctx context.Context) kafka.Message {
 			time.Sleep(time.Millisecond)
 			return kafka.Message{}

@@ -58,7 +58,7 @@ func Test_healthServer_Check(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := grpcserver.NewHealthServer(logger, cancelFunc)
+			s := grpcserver.NewHealthServer(logger, cancelFunc, false)
 
 			if tt.callback != nil {
 				s.AddCallback(tt.callback.ServiceName, tt.callback.HealthCheckCallback)
