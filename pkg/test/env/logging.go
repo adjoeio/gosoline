@@ -24,7 +24,7 @@ func NewConsoleLogger(options ...LoggerOption) (log.GosoLogger, error) {
 	}
 
 	cl := clock.NewRealClock()
-	handler := log.NewHandlerIoWriter(settings.Level, []string{}, log.FormatterConsole, "15:04:05.000", os.Stdout)
+	handler := log.NewHandlerIoWriter(settings.Level, []log.Channel{}, log.FormatterConsole, "15:04:05.000", os.Stdout)
 
 	return log.NewLoggerWithInterfaces(cl, []log.Handler{handler}), nil
 }

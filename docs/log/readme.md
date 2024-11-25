@@ -47,18 +47,21 @@ log:
     handlers:
         main:
             type: iowriter
-            channels: []
+            channels:
+              - name: metrics
+                level: error
+                disabled: false
             formatter: console
             level: info
             timestamp_format: 15:04:05.000
             writer: stdout
 ```
 
-| setting             | description                                                    | default                                                                            |
-|---------------------|----------------------------------------------------------------|------------------------------------------------------------------------------------|
-| log.level           | default level for all handlers without an explicit level value | info                                                                               |
-| log.handlers        | a map of handlers that will be called for every log message   | every logger gets a 'main' handler by default if there is no other handler defined |
-| log.handlers.X.type | defines the type of the handler                                | -                                                                                  |
+| setting             | description                                                        | default                                                                            |
+|---------------------|--------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| log.level           | default level for all logs without an explicit channel level value | info                                                                               |
+| log.handlers        | a map of handlers that will be called for every log message        | every logger gets a 'main' handler by default if there is no other handler defined |
+| log.handlers.X.type | defines the type of the handler                                    | -                                                                                  |
 
 ## Handlers
 Handlers have to implement the following interface:
@@ -66,13 +69,13 @@ Handlers have to implement the following interface:
 [embedmd]:# (../../pkg/log/handler.go /type Handler interface {/ /\n}/)
 ```go
 type Handler interface {
-	Channels() []string
+	Channels() []Channel
 	Level() int
 	Log(timestamp time.Time, level int, msg string, args []interface{}, err error, data Data) error
 }
 ```
 
-`Channels() []string` and `Level() int` are called on every log action to check if the handler should be applied. `Log` does the actual logging afterwards.
+`Channels() []Channel` and `Level() int` are called on every log action to check if the handler should be applied. `Log` does the actual logging afterwards.
 
 ### Implementing a handler and make it available via config
 
@@ -89,7 +92,7 @@ import (
 )
 
 type MyCustomHandlerSettings struct {
-	Channel string `cfg:"channel"`
+	Channel log.Channel `cfg:"channel"`
 }
 
 func MyCustomHandlerFactory(config cfg.Config, name string) (log.Handler, error) {
@@ -102,11 +105,11 @@ func MyCustomHandlerFactory(config cfg.Config, name string) (log.Handler, error)
 }
 
 type MyCustomHandler struct {
-	channel string
+	channel log.Channel
 }
 
-func (h *MyCustomHandler) Channels() []string {
-	return []string{h.channel}
+func (h *MyCustomHandler) Channels() []log.Channel {
+	return []log.Channel{h.channel}
 }
 
 func (h *MyCustomHandler) Level() int {
@@ -129,7 +132,9 @@ log:
   handlers:
     main:
       type: my-custom-handler
-      channel: important
+      channels:
+        - name: important
+          level: warn
 ```
 
 ### Build-in handlers
@@ -141,10 +146,21 @@ Multitool, which is able to write logs to everything which implements the `io.Wr
 | Setting          | Description                                                        | Default      |
 |------------------|--------------------------------------------------------------------|--------------|
 | level            | Levels of this and higher priority will get logged                 | info         |
-| channels         | Messages logged into these channels will be handled                | []           |
+| channels         | Settings for per channel output configurations                     | []           |
 | formatter        | Which format should be used by this handler                        | console      |
 | timestamp_format | A golang time format string to control the format of the timestamp | 15:04:05.000 |
 | writer           | Which io.writer implementation to use                              | stdout       |
+
+##### Channel settings
+Handling outputs per channel is possible with following structure:
+
+| Setting          | Description                                        | Default |
+|------------------|----------------------------------------------------|---------|
+| level            | Levels of this and higher priority will get logged | info    |
+| name             | Name of the channel that this ruleset applies to   |         |
+| disabled         | Toggles logging for specified channel              | false   |
+
+
 
 ##### log to stdout
 ```yaml
@@ -153,7 +169,6 @@ log:
     main:
       type: iowriter
       level: info
-      channels: []
       formatter: console
       timestamp_format: 15:04:05.000
       writer: stdout
@@ -165,11 +180,26 @@ log:
     main:
       type: iowriter
       level: info
-      channels: *
       formatter: console
       timestamp_format: 15:04:05.000
       writer: file
       path: logs.log
+```
+##### skip metrics channel, log above warning level for app channel
+```yaml
+log:
+  handlers:
+    main:
+      type: iowriter
+      level: info
+      formatter: console
+      timestamp_format: 15:04:05.000
+      writer: stdout
+      channels:
+        - name: metrics
+          disabled: true
+        - name: app
+          level: warn
 ```
 
 #### metric
@@ -184,7 +214,7 @@ No configuration needed. Publishes every logged error to sentry.
 ```go
 func Usage() {
 	ctx := context.Background()
-	handler := log.NewHandlerIoWriter(log.LevelDebug, []string{}, log.FormatterConsole, "15:04:05.000", os.Stdout)
+	handler := log.NewHandlerIoWriter(log.LevelDebug, []log.Channel{}, log.FormatterConsole, "15:04:05.000", os.Stdout)
 	logger := log.NewLoggerWithInterfaces(clock.NewRealClock(), []log.Handler{handler})
 
 	if err := logger.Option(log.WithContextFieldsResolver(log.ContextLoggerFieldsResolver)); err != nil {

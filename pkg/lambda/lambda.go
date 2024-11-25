@@ -5,6 +5,7 @@ import (
 	"os"
 
 	awsLambda "github.com/aws/aws-lambda-go/lambda"
+
 	"github.com/justtrackio/gosoline/pkg/appctx"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/clock"
@@ -17,7 +18,7 @@ type HandlerFactory func(ctx context.Context, config cfg.Config, logger log.Logg
 func Start(handlerFactory HandlerFactory, configOptions ...cfg.Option) {
 	clock.WithUseUTC(true)
 
-	logHandler := log.NewHandlerIoWriter(log.LevelInfo, []string{}, log.FormatterConsole, "", os.Stdout)
+	logHandler := log.NewHandlerIoWriter(log.LevelInfo, []log.Channel{}, log.FormatterConsole, "", os.Stdout)
 	loggerOptions := []log.Option{
 		log.WithHandlers(logHandler),
 		log.WithContextFieldsResolver(log.ContextLoggerFieldsResolver),
