@@ -9,22 +9,22 @@ import (
 )
 
 type MyCustomHandlerSettings struct {
-	Channel string `cfg:"channel"`
+	Channel log.Channel `cfg:"channel"`
 }
 
 type MyCustomHandler struct {
-	channel string
+	channel log.Channel
 }
 
-func (h *MyCustomHandler) Channels() []string {
-	return []string{h.channel}
+func (h *MyCustomHandler) Channels() []log.Channel {
+	return []log.Channel{h.channel}
 }
 
 func (h *MyCustomHandler) Level() int {
 	return log.PriorityInfo
 }
 
-func (h *MyCustomHandler) Log(timestamp time.Time, level int, msg string, args []interface{}, err error, data log.Data) error {
+func (h *MyCustomHandler) Log(timestamp time.Time, _ int, msg string, _ []interface{}, _ error, _ log.Data) error {
 	fmt.Printf("%s happenend at %s", msg, timestamp.Format(time.RFC822))
 	return nil
 }
