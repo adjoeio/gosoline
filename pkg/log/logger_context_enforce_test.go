@@ -5,10 +5,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/justtrackio/gosoline/pkg/clock"
 	"github.com/justtrackio/gosoline/pkg/log"
+	"github.com/stretchr/testify/suite"
 )
 
 type ContextEnforcingLoggerTestSuite struct {

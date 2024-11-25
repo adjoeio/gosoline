@@ -12,7 +12,6 @@ import (
 
 	httpHeaders "github.com/go-http-utils/headers"
 	"github.com/go-resty/resty/v2"
-
 	"github.com/justtrackio/gosoline/pkg/apiserver"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/http"

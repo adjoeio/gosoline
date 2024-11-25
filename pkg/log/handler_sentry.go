@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-
 	"github.com/justtrackio/gosoline/pkg/cfg"
 )
 
