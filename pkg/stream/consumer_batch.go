@@ -168,7 +168,7 @@ func (c *BatchConsumer) consumeBatch(ctx context.Context, batch []*consumerData)
 		return
 	}
 
-	batch, models, attributes, subSpans := c.decodeMessages(batchCtx, batch)
+	batch, models, attributes, subSpans, messagesWithEncodingErrors := c.decodeMessages(batchCtx, batch)
 	defer func() {
 		for i := range subSpans {
 			subSpans[i].Finish()
@@ -188,11 +188,19 @@ func (c *BatchConsumer) consumeBatch(ctx context.Context, batch []*consumerData)
 		logger.Error("number of acks does not match number of messages in batch: %d != %d", len(acks), len(batch))
 	}
 
-	ackMessages := make([]*consumerData, 0, len(batch))
+	ackMessages := make([]*consumerData, 0, len(batch)+len(messagesWithEncodingErrors))
 	for i, ack := range acks {
 		ackMessages = append(ackMessages, batch[i])
 		if !ack && !c.hasNativeRetry() {
 			c.retry(batchCtx, batch[i].msg)
+		}
+	}
+
+	for _, cdata := range messagesWithEncodingErrors {
+		ackMessages = append(ackMessages, cdata)
+		acks = append(acks, false)
+		if !c.hasNativeRetry() {
+			c.retry(batchCtx, cdata.msg)
 		}
 	}
 
@@ -207,11 +215,12 @@ func (c *BatchConsumer) consumeBatch(ctx context.Context, batch []*consumerData)
 func (c *BatchConsumer) decodeMessages(
 	batchCtx context.Context,
 	batch []*consumerData,
-) (newBatch []*consumerData, models []any, attributes []map[string]string, spans []tracing.Span) {
+) (newBatch []*consumerData, models []any, attributes []map[string]string, spans []tracing.Span, messagesWithEncodingErrors []*consumerData) {
 	models = make([]any, 0, len(batch))
 	attributes = make([]map[string]string, 0, len(batch))
 	spans = make([]tracing.Span, 0, len(batch))
 	newBatch = make([]*consumerData, 0, len(batch))
+	messagesWithEncodingErrors = make([]*consumerData, 0, len(batch))
 
 	for _, cdata := range batch {
 		model := c.callback.GetModel(cdata.msg.Attributes)
@@ -221,6 +230,7 @@ func (c *BatchConsumer) decodeMessages(
 			c.logger.WithContext(msgCtx).WithFields(log.Fields{
 				"error": err,
 			}).Error("an error occurred during the batch decode message operation")
+			messagesWithEncodingErrors = append(messagesWithEncodingErrors, cdata)
 			continue
 		}
 
@@ -232,5 +242,5 @@ func (c *BatchConsumer) decodeMessages(
 		spans = append(spans, span)
 	}
 
-	return newBatch, models, attributes, spans
+	return newBatch, models, attributes, spans, messagesWithEncodingErrors
 }
