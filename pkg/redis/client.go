@@ -6,6 +6,7 @@ import (
 	"time"
 
 	baseRedis "github.com/go-redis/redis/v8"
+
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/exec"
 	"github.com/justtrackio/gosoline/pkg/log"
@@ -106,6 +107,7 @@ type Client interface {
 	DecrBy(ctx context.Context, key string, amount int64) (int64, error)
 	Incr(ctx context.Context, key string) (int64, error)
 	IncrBy(ctx context.Context, key string, amount int64) (int64, error)
+	IncrByFloat(ctx context.Context, key string, amount float64) (float64, error)
 
 	PFAdd(ctx context.Context, key string, els ...interface{}) (int64, error)
 	PFCount(ctx context.Context, keys ...string) (int64, error)
@@ -523,6 +525,14 @@ func (c *redisClient) IncrBy(ctx context.Context, key string, amount int64) (int
 	})
 
 	return cmd.(*baseRedis.IntCmd).Val(), err
+}
+
+func (c *redisClient) IncrByFloat(ctx context.Context, key string, amount float64) (float64, error) {
+	cmd, err := c.execute(ctx, func() ErrCmder {
+		return c.base.IncrByFloat(ctx, key, amount)
+	})
+
+	return cmd.(*baseRedis.FloatCmd).Val(), err
 }
 
 func (c *redisClient) Decr(ctx context.Context, key string) (int64, error) {
