@@ -297,6 +297,11 @@ func WithMetrics(app *App) {
 	WithModuleFactory("prometheus-metrics-server", metric.NewPrometheusMetricsServerModule)(app)
 }
 
+func WithSingleMetrics(app *App) {
+	WithModuleFactory("metric", metric.NewSingleMetricsModule)(app)
+	WithModuleFactory("prometheus-metrics-server", metric.NewPrometheusMetricsServerModule)(app)
+}
+
 func WithProducerDaemon(app *App) {
 	app.addKernelOption(func(config cfg.GosoConf) kernelPkg.Option {
 		return kernelPkg.WithModuleMultiFactory(stream.ProducerDaemonFactory)
