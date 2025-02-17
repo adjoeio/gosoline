@@ -133,7 +133,11 @@ func AttemptLoggerInitMiddleware(logger log.Logger, backoff *exec.BackoffSetting
 			return output, metadata, err
 		}
 
-		logger.Warn("sent request to resource %s successful after %d attempts in %s", attempt.resource, attempt.count, durationTook)
+		logger.WithFields(log.Fields{
+			"resource":      attempt.resource.String(),
+			"attempt_count": attempt.count,
+			"duration":      durationTook,
+		}).Warn("sent request to resource successful after attempts")
 
 		return output, metadata, err
 	})
