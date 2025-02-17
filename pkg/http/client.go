@@ -427,7 +427,10 @@ func (c *client) AddRetryCondition(f RetryConditionFunc) {
 	c.http.AddRetryCondition(func(r *resty.Response, e error) bool {
 		conditionResult := f(buildResponse(r, nil), e)
 		if conditionResult {
-			c.logger.Warn("retry attempt %d for request %s", r.Request.Attempt, r.Request.URL)
+			c.logger.WithFields(log.Fields{
+				"attempt": r.Request.Attempt,
+				"url":     r.Request.URL,
+			}).Warn("retry attempt for request")
 		}
 
 		return conditionResult
