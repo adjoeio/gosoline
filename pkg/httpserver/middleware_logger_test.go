@@ -45,7 +45,7 @@ func (s *loggingMiddlewareTestSuite) SetupTest() {
 func (s *loggingMiddlewareTestSuite) TestSuccess() {
 	ginCtx := buildRequest()
 
-	s.logger.EXPECT().Info("%s %s %s", "GET", "path", "HTTP/1.1")
+	s.logger.EXPECT().Info("successful request")
 
 	s.handler(ginCtx)
 }
@@ -161,7 +161,7 @@ func TestLogFields(t *testing.T) {
 		assert.Equal(t, expected, fields)
 	}).Return(logger)
 
-	logger.EXPECT().Info("%s %s %s", "GET", "path", "HTTP/1.1")
+	logger.EXPECT().Info("successful request")
 
 	handler := httpserver.NewLoggingMiddlewareWithInterfaces(logger, httpserver.LoggingSettings{}, clock)
 
@@ -181,7 +181,7 @@ func TestLogEncodedRequestBody(t *testing.T) {
 		assert.Equal(t, "e30=", requestBody)
 	}).Return(logger)
 
-	logger.EXPECT().Info("%s %s %s", "GET", "path", "HTTP/1.1")
+	logger.EXPECT().Info("successful request")
 
 	handler := httpserver.NewLoggingMiddlewareWithInterfaces(logger, httpserver.LoggingSettings{
 		RequestBody:       true,
