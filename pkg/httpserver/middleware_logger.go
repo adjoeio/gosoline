@@ -135,7 +135,8 @@ func (lc *logCall) finalize(ginCtx *gin.Context, requestTimeSecond float64) {
 	method, path, proto := lc.fields["request_method"], lc.fields["request_path"], lc.fields["protocol"]
 
 	if len(ginCtx.Errors) == 0 {
-		logger.Info("%s %s %s", method, path, proto)
+		// Request fields are added to the logger before.
+		logger.Info("successful request")
 
 		return
 	}
