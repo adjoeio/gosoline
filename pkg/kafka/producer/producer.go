@@ -118,6 +118,11 @@ func (p *Producer) writeBatch(ctx context.Context, batch []kafka.Message, attemp
 			p.balancer.OnError(batch[i], err[i])
 			failedWrites = append(failedWrites, batch[i])
 		}
+		p.Logger.WithFields(log.Fields{
+			"attempt":             attempt,
+			"batch_size":          len(batch),
+			"failed_writes_count": len(failedWrites),
+		}).Error("error while writing batch messages to kafka")
 
 		if attempt > p.Settings.Retries {
 			return err
