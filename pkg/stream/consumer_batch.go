@@ -142,6 +142,8 @@ func (c *BatchConsumer) processSingleMessage(_ context.Context, cdata *consumerD
 }
 
 func (c *BatchConsumer) processBatch(ctx context.Context) {
+	start := c.clock.Now()
+
 	batch := c.batch
 
 	c.batch = make([]*consumerData, 0, c.settings.BatchSize)
@@ -149,12 +151,15 @@ func (c *BatchConsumer) processBatch(ctx context.Context) {
 	c.ticker = time.NewTicker(c.settings.IdleTimeout)
 
 	c.consumeBatch(ctx, batch)
+
+	duration := c.clock.Now().Sub(start)
+	c.writeMetricDurationAndProcessedCount(duration, len(batch))
+
+	atomic.AddInt32(&c.processed, int32(len(batch)))
 }
 
 func (c *BatchConsumer) consumeBatch(ctx context.Context, batch []*consumerData) {
-	defer c.recover(ctx, nil)
-
-	start := c.clock.Now()
+	defer c.recoverBatch(ctx, batch)
 
 	// make sure to create new context as we can't rely on the tracer to create a new one
 	batchCtx, cancel := context.WithCancel(ctx)
@@ -205,11 +210,6 @@ func (c *BatchConsumer) consumeBatch(ctx context.Context, batch []*consumerData)
 	}
 
 	c.AcknowledgeBatch(batchCtx, ackMessages, acks)
-
-	duration := c.clock.Now().Sub(start)
-	atomic.AddInt32(&c.processed, int32(len(ackMessages)))
-
-	c.writeMetricDurationAndProcessedCount(duration, len(batch))
 }
 
 func (c *BatchConsumer) decodeMessages(batchCtx context.Context, batch []*consumerData) ([]*consumerData, []interface{}, []map[string]string, []tracing.Span, []*consumerData) {
