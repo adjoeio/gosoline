@@ -366,6 +366,30 @@ func (c *baseConsumer) recover(ctx context.Context, msg *Message) {
 	c.retry(ctx, msg)
 }
 
+func (c *baseConsumer) recoverBatch(ctx context.Context, batch []*consumerData) {
+	var err error
+
+	if err = coffin.ResolveRecovery(recover()); err == nil {
+		return
+	}
+
+	c.handleError(ctx, err, "a panic occurred during the consume batch operation")
+
+	if len(batch) == 0 || c.hasNativeRetry() {
+		return
+	}
+
+	ackMessages := make([]*consumerData, 0, len(batch))
+	acks := make([]bool, len(batch))
+	for i := range batch {
+		ackMessages = append(ackMessages, batch[i])
+		acks[i] = false
+		c.retry(ctx, batch[i].msg)
+	}
+
+	c.AcknowledgeBatch(ctx, ackMessages, acks)
+}
+
 func (c *baseConsumer) retry(ctx context.Context, msg *Message) {
 	if !c.settings.Retry.Enabled {
 		return
