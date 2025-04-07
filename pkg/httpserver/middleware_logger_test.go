@@ -12,15 +12,16 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/justtrackio/gosoline/pkg/clock"
 	clockMocks "github.com/justtrackio/gosoline/pkg/clock/mocks"
 	"github.com/justtrackio/gosoline/pkg/httpserver"
 	"github.com/justtrackio/gosoline/pkg/log"
 	logMocks "github.com/justtrackio/gosoline/pkg/log/mocks"
 	"github.com/justtrackio/gosoline/pkg/test/matcher"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 )
 
 type loggingMiddlewareTestSuite struct {
@@ -46,7 +47,7 @@ func (s *loggingMiddlewareTestSuite) SetupTest() {
 func (s *loggingMiddlewareTestSuite) TestSuccess() {
 	ginCtx := buildRequest()
 
-	s.logger.EXPECT().Info("successful request")
+	s.logger.EXPECT().Debug("successful request")
 
 	s.handler(ginCtx)
 }
@@ -162,7 +163,7 @@ func TestLogFields(t *testing.T) {
 		assert.Equal(t, expected, fields)
 	}).Return(logger)
 
-	logger.EXPECT().Info("successful request")
+	logger.EXPECT().Debug("successful request")
 
 	handler := httpserver.NewLoggingMiddlewareWithInterfaces(logger, httpserver.LoggingSettings{}, clock)
 
@@ -182,7 +183,7 @@ func TestLogEncodedRequestBody(t *testing.T) {
 		assert.Equal(t, "e30=", requestBody)
 	}).Return(logger)
 
-	logger.EXPECT().Info("successful request")
+	logger.EXPECT().Debug("successful request")
 
 	handler := httpserver.NewLoggingMiddlewareWithInterfaces(logger, httpserver.LoggingSettings{
 		RequestBody:       true,
