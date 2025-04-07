@@ -139,7 +139,7 @@ func (lc *logCall) finalize(ginCtx *gin.Context, requestTimeSecond float64) {
 
 	if len(ginCtx.Errors) == 0 {
 		// Request fields are added to the logger before.
-		logger.Info("successful request")
+		logger.Debug("successful request")
 
 		return
 	}
