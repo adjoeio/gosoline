@@ -10,7 +10,6 @@ import (
 type Settings struct {
 	// Connection.
 	Bootstrap          []string      `cfg:"bootstrap" validate:"required"`
-	UseTLS             bool          `cfg:"use_tls" default:"true"`
 	InsecureSkipVerify bool          `cfg:"insecure_skip_verify"`
 	TlsEnabled         bool          `cfg:"tls_enabled" default:"true"`
 	Timeout            time.Duration `cfg:"timeout" default:"30m"`
