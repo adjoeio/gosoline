@@ -3,7 +3,8 @@ package stream
 import (
 	"context"
 	"fmt"
-
+	
+	"github.com/justtrackio/gosoline/pkg/appctx"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/cloud/aws/sqs"
 	"github.com/justtrackio/gosoline/pkg/log"
@@ -37,7 +38,17 @@ type BaseOutputConfigurationTracing struct {
 	Enabled bool `cfg:"enabled" default:"true"`
 }
 
-func NewConfigurableOutput(ctx context.Context, config cfg.Config, logger log.Logger, name string) (Output, error) {
+func outputKey(name string) string {
+	return fmt.Sprintf("output-%s", name)
+}
+
+func ProvideConfigurableOutput(ctx context.Context, config cfg.Config, logger log.Logger, name string) (Output, error) {
+	return appctx.Provide(ctx, outputKey(name), func() (Output, error) {
+		return newConfigurableOutput(ctx, config, logger, name)
+	})
+}
+
+func newConfigurableOutput(ctx context.Context, config cfg.Config, logger log.Logger, name string) (Output, error) {
 	outputFactories := map[string]OutputFactory{
 		OutputTypeFile:     newFileOutputFromConfig,
 		OutputTypeInMemory: newInMemoryOutputFromConfig,

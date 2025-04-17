@@ -39,17 +39,18 @@ type RetryHandlerSqs struct {
 	settings *RetryHandlerSqsSettings
 }
 
-func NewRetryHandlerSqs(ctx context.Context, config cfg.Config, logger log.Logger, name string) (Input, RetryHandler, error) {
-	var err error
-	var input AcknowledgeableInput
-	var output Output
+func NewRetryHandlerSqs(ctx context.Context, config cfg.Config, logger log.Logger, md RetryMetadata) (Input, RetryHandler, error) {
+	var (
+		err      error
+		input    AcknowledgeableInput
+		output   Output
+		settings = &RetryHandlerSqsSettings{}
+	)
 
-	key := ConfigurableConsumerRetryKey(name)
-	settings := &RetryHandlerSqsSettings{}
-	config.UnmarshalKey(key, settings)
+	config.UnmarshalKey(md.retryConfigKey, settings)
 
 	if settings.QueueId == "" {
-		settings.QueueId = fmt.Sprintf("consumer-retry-%s", name)
+		settings.QueueId = fmt.Sprintf("consumer-retry-%s", md.name)
 	}
 
 	inputSettings := &SqsInputSettings{
