@@ -80,7 +80,7 @@ func NewConfigurableMultiOutput(ctx context.Context, config cfg.Config, logger l
 	for outputName := range ts {
 		name := fmt.Sprintf("%s.types.%s", base, outputName)
 
-		if output, err := NewConfigurableOutput(ctx, config, logger, name); err != nil {
+		if output, err := ProvideConfigurableOutput(ctx, config, logger, name); err != nil {
 			return nil, fmt.Errorf("can not create multi output %s: %w", base, err)
 		} else {
 			multiOutput.outputs = append(multiOutput.outputs, output)
