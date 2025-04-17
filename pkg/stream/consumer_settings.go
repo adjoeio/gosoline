@@ -9,17 +9,11 @@ import (
 )
 
 type ConsumerSettings struct {
-	Input       string                `cfg:"input" default:"consumer" validate:"required"`
-	RunnerCount int                   `cfg:"runner_count" default:"1" validate:"min=1"`
-	Encoding    EncodingType          `cfg:"encoding" default:"application/json"`
-	IdleTimeout time.Duration         `cfg:"idle_timeout" default:"10s"`
-	Retry       ConsumerRetrySettings `cfg:"retry"`
-}
-
-type ConsumerRetrySettings struct {
-	Enabled   bool          `cfg:"enabled"`
-	Type      string        `cfg:"type" default:"sqs"`
-	GraceTime time.Duration `cfg:"grace_time" default:"10s"`
+	Input       string        `cfg:"input" default:"consumer" validate:"required"`
+	RunnerCount int           `cfg:"runner_count" default:"1" validate:"min=1"`
+	Encoding    EncodingType  `cfg:"encoding" default:"application/json"`
+	IdleTimeout time.Duration `cfg:"idle_timeout" default:"10s"`
+	Retry       RetrySettings `cfg:"retry"`
 }
 
 func GetAllConsumerNames(config cfg.Config) []string {
