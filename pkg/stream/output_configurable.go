@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/justtrackio/gosoline/pkg/appctx"
 	"github.com/justtrackio/gosoline/pkg/cfg"
 	"github.com/justtrackio/gosoline/pkg/cloud/aws/sqs"
 	kafkaProducer "github.com/justtrackio/gosoline/pkg/kafka/producer"
@@ -58,7 +59,23 @@ type BaseOutputConfigurationTracing struct {
 	Enabled bool `cfg:"enabled" default:"true"`
 }
 
-func NewConfigurableOutput(ctx context.Context, config cfg.Config, logger log.Logger, name string) (Output, *OutputCapabilities, error) {
+type ConfigurableOutput struct {
+	Output             Output
+	OutputCapabilities *OutputCapabilities
+}
+
+func ProvideConfigurableOutput(ctx context.Context, config cfg.Config, logger log.Logger, name string) (ConfigurableOutput, error) {
+	return appctx.Provide(ctx, outputKey(name), func() (ConfigurableOutput, error) {
+		output, capabilities, err := newConfigurableOutput(ctx, config, logger, name)
+
+		return ConfigurableOutput{
+			Output:             output,
+			OutputCapabilities: capabilities,
+		}, err
+	})
+}
+
+func newConfigurableOutput(ctx context.Context, config cfg.Config, logger log.Logger, name string) (Output, *OutputCapabilities, error) {
 	key := fmt.Sprintf("%s.type", ConfigurableOutputKey(name))
 	typ, err := config.GetString(key)
 	if err != nil {
@@ -122,8 +139,10 @@ type KafkaOutputConfiguration struct {
 	// LingerTimeout is the max time the producer will wait for new records before flushing the current batch.
 	// When set to 0s, batches will be sent out as fast as possible (or when the size limits are reached with enough back pressure).
 	// The kafka library recommends to increase this only when batching with low volume.
-	LingerTimeout  time.Duration `cfg:"linger_timeout" default:"0s"`
-	RequestTimeout time.Duration `cfg:"request_timeout" default:"10s"`
+	LingerTimeout          time.Duration `cfg:"linger_timeout" default:"0s"`
+	RequestTimeout         time.Duration `cfg:"request_timeout" default:"10s"`
+	RetryTimes             int           `cfg:"retry_times" default:"-1"`
+	RequestTimeoutOverhead time.Duration `cfg:"request_timeout_overhead" default:"10s"`
 
 	MaxBatchSize  int   `cfg:"max_batch_size" default:"10000"`
 	MaxBatchBytes int32 `cfg:"max_batch_bytes" default:"1000012"`
@@ -180,13 +199,15 @@ func newKafkaOutputFromConfig(ctx context.Context, config cfg.Config, logger log
 			Group:       configuration.Group,
 			Application: configuration.Application,
 		},
-		Connection:     configuration.Connection,
-		TopicId:        configuration.TopicId,
-		Compression:    compression,
-		MaxBatchSize:   configuration.MaxBatchSize,
-		MaxBatchBytes:  configuration.MaxBatchBytes,
-		LingerTimeout:  configuration.LingerTimeout,
-		RequestTimeout: configuration.RequestTimeout,
+		Connection:             configuration.Connection,
+		TopicId:                configuration.TopicId,
+		Compression:            compression,
+		MaxBatchSize:           configuration.MaxBatchSize,
+		MaxBatchBytes:          configuration.MaxBatchBytes,
+		LingerTimeout:          configuration.LingerTimeout,
+		RequestTimeout:         configuration.RequestTimeout,
+		RetryTimes:             configuration.RetryTimes,
+		RequestTimeoutOverhead: configuration.RequestTimeoutOverhead,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("can not create kafka output %s: %w", name, err)
@@ -371,4 +392,8 @@ func newSqsOutputFromConfig(ctx context.Context, config cfg.Config, logger log.L
 
 func ConfigurableOutputKey(name string) string {
 	return fmt.Sprintf("stream.output.%s", name)
+}
+
+func outputKey(name string) string {
+	return fmt.Sprintf("output-%s", name)
 }

@@ -57,6 +57,7 @@ func Default(options ...Option) kernel.Kernel {
 		WithLoggerSentryHandler(log.SentryContextConfigProvider, log.SentryContextEcsMetadataProvider),
 		WithMetrics,
 		WithProducerDaemon,
+		WithProducerRetryDaemon,
 		WithTaskRunner,
 		WithProfiling,
 		WithTracing,

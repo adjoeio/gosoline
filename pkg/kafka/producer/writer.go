@@ -37,6 +37,15 @@ func NewWriter(ctx context.Context, config cfg.Config, logger log.Logger, settin
 		kgo.ProducerBatchCompression(settings.GetKafkaCompressor()),
 		kgo.WithContext(ctx),
 		kgo.WithLogger(logging.NewKafkaLogger(ctx, logger)),
+		kgo.RequestTimeoutOverhead(settings.RequestTimeoutOverhead),
+	}
+
+	if settings.RetryTimes >= 0 {
+		opts = append(
+			opts,
+			kgo.RecordRetries(settings.RetryTimes),
+			kgo.UnknownTopicRetries(settings.RetryTimes),
+		)
 	}
 
 	connOpts, err := connection.BuildConnectionOptions(config, settings.Connection)

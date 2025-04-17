@@ -21,15 +21,9 @@ type ConsumerSettings struct {
 	IdleTimeout          time.Duration              `cfg:"idle_timeout" default:"10s"`
 	AcknowledgeGraceTime time.Duration              `cfg:"acknowledge_grace_time" default:"10s"`
 	ConsumeGraceTime     time.Duration              `cfg:"consume_grace_time" default:"10s"`
-	Retry                ConsumerRetrySettings      `cfg:"retry"`
+	Retry                RetrySettings              `cfg:"retry"`
 	Healthcheck          health.HealthCheckSettings `cfg:"healthcheck"`
 	AggregateMessageMode string                     `cfg:"aggregate_message_mode" default:"atMostOnce" validate:"oneof=atLeastOnce atMostOnce"`
-}
-
-type ConsumerRetrySettings struct {
-	Enabled   bool          `cfg:"enabled"`
-	Type      string        `cfg:"type" default:"sqs"`
-	GraceTime time.Duration `cfg:"grace_time" default:"10s"`
 }
 
 func GetAllConsumerNames(config cfg.Config) ([]string, error) {
