@@ -133,7 +133,7 @@ func NewProducerDaemon(ctx context.Context, config cfg.Config, logger log.Logger
 	var output Output
 	var aggregator ProducerDaemonAggregator
 
-	if output, err = NewConfigurableOutput(ctx, config, logger, settings.Output); err != nil {
+	if output, err = ProvideConfigurableOutput(ctx, config, logger, settings.Output); err != nil {
 		return nil, fmt.Errorf("can not create output for producer daemon %s: %w", name, err)
 	}
 
