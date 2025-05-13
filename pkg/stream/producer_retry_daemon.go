@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	metricNameProducerRetryGetCount = "RetryGetCount"
-	metricNameProducerRetryPutCount = "RetryPutCount"
+	metricNameProducerRetryGetCount = "ProducerRetryGetCount"
+	metricNameProducerRetryPutCount = "ProducerRetryPutCount"
 )
 
 //go:generate mockery --name ProducerRetryDaemon
