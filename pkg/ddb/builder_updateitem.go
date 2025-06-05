@@ -17,6 +17,7 @@ type UpdateItemBuilder interface {
 	Add(path string, value interface{}) UpdateItemBuilder
 	Delete(path string, value interface{}) UpdateItemBuilder
 	Set(path string, value interface{}) UpdateItemBuilder
+	SetOperand(path string, op expression.OperandBuilder) UpdateItemBuilder
 	SetMap(values map[string]interface{}) UpdateItemBuilder
 	SetIfNotExist(path string, value interface{}) UpdateItemBuilder
 	Remove(path string) UpdateItemBuilder
@@ -79,6 +80,12 @@ func (b *updateItemBuilder) Delete(path string, value interface{}) UpdateItemBui
 func (b *updateItemBuilder) Set(path string, value interface{}) UpdateItemBuilder {
 	return b.update(func() expression.UpdateBuilder {
 		return b.updateBuilder.Set(expression.Name(path), expression.Value(value))
+	})
+}
+
+func (b *updateItemBuilder) SetOperand(path string, op expression.OperandBuilder) UpdateItemBuilder {
+	return b.update(func() expression.UpdateBuilder {
+		return b.updateBuilder.Set(expression.Name(path), op)
 	})
 }
 
