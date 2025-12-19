@@ -14,7 +14,7 @@ type PartitionManager struct {
 	logger         log.Logger
 	cfn            coffin.Coffin
 	consumers      map[assignment]*PartitionConsumer
-	lck            *sync.Mutex
+	lck            sync.RWMutex
 	messageHandler KafkaMessageHandler
 	done           chan struct{}
 }
@@ -38,7 +38,7 @@ func NewPartitionManager(logger log.Logger, messageHandler KafkaMessageHandler) 
 		logger:         logger,
 		cfn:            cfn,
 		consumers:      make(map[assignment]*PartitionConsumer),
-		lck:            &sync.Mutex{},
+		lck:            sync.RWMutex{},
 		messageHandler: messageHandler,
 		done:           done,
 	}
@@ -101,10 +101,16 @@ func (p *PartitionManager) OnPartitionsLostOrRevoked(ctx context.Context, _ *kgo
 }
 
 func (p *PartitionManager) Handle(topic string, partition int32, records []*kgo.Record) {
-	p.lck.Lock()
-	defer p.lck.Unlock()
+	p.lck.RLock()
+	defer p.lck.RUnlock()
 
-	p.consumers[assignment{topic, partition}].assignedBatch <- records
+	consumer, ok := p.consumers[assignment{topic, partition}]
+	if !ok {
+		p.logger.Warn(context.Background(), "no consumer found for partition %d of topic %s", partition, topic)
+		return
+	}
+
+	consumer.assignedBatch <- records
 }
 
 func (p *PartitionManager) HandleWithoutCommit(records []*kgo.Record) {
